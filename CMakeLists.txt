@@ -148,36 +148,38 @@ set(DOC 1)
 ## Kinematic helper library
 file(GLOB_RECURSE KIN_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
     include/kinematics_helper.hpp
-    include/common.hpp)
+    include/common.hpp
+    )
 file(GLOB_RECURSE KIN_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
     src/kinematics_helper.cpp
-    src/common.cpp)
+    src/common.cpp
+    )
 add_library(kinematics_helper ${KIN_CPP_SOURCES} ${KIN_HPP_SOURCES})
 target_link_libraries(kinematics_helper ${catkin_LIBRARIES})
 
 ## Trajectory planner library
 file(GLOB_RECURSE TRAJ_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
     include/trajectory_planner.hpp
-    include/kinematics_helper.hpp
-    include/common.hpp)
+    include/base_planner.hpp
+    ${KIN_HPP_SOURCES}
+    )
 file(GLOB_RECURSE TRAJ_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
-    src/trajectory_planner.cpp
-    src/kinematics_helper.cpp
-    src/common.cpp)
+     src/trajectory_planner.cpp
+     ${KIN_CPP_SOURCES}
+    )
 add_library(trajectory_planner ${TRAJ_CPP_SOURCES} ${TRAJ_HPP_SOURCES})
 target_link_libraries(trajectory_planner ${catkin_LIBRARIES})
 
+
 ## Path Trajectory planner library
 file(GLOB_RECURSE PTRAJ_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
-    include/path_trajectory_planner.hpp
-    include/trajectory_planner.hpp
-    include/kinematics_helper.hpp
-    include/common.hpp)
+     include/path_trajectory_planner.hpp
+     ${TRAJ_HPP_SOURCES}
+     )
 file(GLOB_RECURSE PTRAJ_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
-    src/path_trajectory_planner.cpp
-    src/trajectory_planner.cpp
-    src/kinematics_helper.cpp
-    src/common.cpp)
+     src/path_trajectory_planner.cpp
+     ${TRAJ_CPP_SOURCES}
+    )
 add_library(path_trajectory_planner ${PTRAJ_CPP_SOURCES} ${PTRAJ_HPP_SOURCES})
 target_link_libraries(path_trajectory_planner ${catkin_LIBRARIES})
 

@@ -135,4 +135,4 @@ bool KinematicsHelper::computeFK(const moveit_msgs::RobotState &state,
 
 
 
-}
+}// namespace trajectory_planner_moveit

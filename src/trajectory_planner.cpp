@@ -111,12 +111,14 @@ bool TrajectoryPlanner::plan(const geometry_msgs::Pose &goal, moveit_msgs::Motio
     return plan(goal, solution, start_state);
 }
 
+
 bool TrajectoryPlanner::plan(const geometry_msgs::Pose &goal, moveit_msgs::MotionPlanResponse &solution, const sensor_msgs::JointState &start_state)
 {
     if (!planning_client.exists()) {
         ROS_ERROR_STREAM("Unable to connect to planning service - ensure that MoveIt is launched!");
         return false;
     }
+
 
     moveit_msgs::GetMotionPlanRequest get_mp_request;
     moveit_msgs::MotionPlanRequest &request = get_mp_request.motion_plan_request;
@@ -126,7 +128,6 @@ bool TrajectoryPlanner::plan(const geometry_msgs::Pose &goal, moveit_msgs::Motio
     request.allowed_planning_time = plan_time;
     request.planner_id = plan_id;
     request.start_state.joint_state = start_state;
-    request.
 
     ROS_DEBUG("Computing possible IK solutions for goal pose");
 

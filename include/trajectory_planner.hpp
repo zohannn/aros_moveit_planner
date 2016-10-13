@@ -168,6 +168,6 @@ public:
 
 };
 
-}
+} // namespace trajectory_planner_moveit
 
 #endif // TRAJECTORY_PLANNER_HPP

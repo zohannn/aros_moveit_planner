@@ -116,6 +116,6 @@ public:
 
 
 
-}
+}// namespace trajectory_planner_moveit
 
 #endif // IKHELPER_H

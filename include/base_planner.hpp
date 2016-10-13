@@ -18,7 +18,7 @@ class BasePlanner {
 
 protected:
 
-    string _arm; /**< selected arm (e.g. "right") */
+    string arm; /**< selected arm (e.g. "right") */
 
 public:
 
@@ -29,7 +29,7 @@ public:
      * Return the name of the planner
      * @return
      */
-    virtual const string getName() = 0;
+    //virtual const string getName() = 0;
 
     /**
      * @brief plan
@@ -53,16 +53,16 @@ public:
     /**
      * @brief setArm
      * This method sets the arm that is object of the planning
-     * @param arm
+     * @param _arm
      */
-    void setArm(const string &arm) { _arm = arm; }
+    void setArm(const string &_arm) { arm = _arm; }
 
     /**
      * @brief getArm
      * This method gets the arm that is object of the planning
      * @return
      */
-    string getArm() { return _arm; }
+    string getArm() { return arm; }
 
 };
 

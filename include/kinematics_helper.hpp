@@ -97,7 +97,7 @@ public:
 				   const double timeout = TIMEOUT);
 	/**
 	  Compute the cartesian position for link with given name, using given robot state.
-	  Optionally an alternative reference frame id can be specified. Default is set to world_link
+      Optionally an alternative reference frame id can be specified. Default is set to FRAME_ID
 
 	 * @brief computeFK
 	 * @param state

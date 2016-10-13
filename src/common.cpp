@@ -30,7 +30,7 @@ void getJointPositionsFromState(const vector<string> &joints, const moveit_msgs:
 void getArmJointNames(const string &arm, vector<string> &names)
 {
 
-    for(int i = 0; i < 7; ++i) {
+    for(int i = 1; i <= 7; ++i) {
         stringstream ss;
         ss << arm << "_joint" << i;
         names.push_back(ss.str());

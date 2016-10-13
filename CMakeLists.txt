@@ -6,14 +6,18 @@ project(${PROJECT_NAME})
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED
+    COMPONENTS
     roscpp
     moveit_msgs
-    ##eigen
     moveit_core
     moveit_ros_planning_interface
-    ##actionlib
+    cmake_modules
 )
 
+##find_package(cmake_modules REQUIRED)
+
+find_package( Eigen REQUIRED )
+include_directories(${EIGEN_INCLUDE_DIR})
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -133,13 +137,49 @@ set(DOC 1)
 # include_directories(include)
 
 # sources
-file(GLOB_RECURSE HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS include/*.hpp)
-file(GLOB_RECURSE CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS src/*.cpp)
+##file(GLOB_RECURSE HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS include/*.hpp)
+##file(GLOB_RECURSE CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS src/*.cpp)
 ## Declare a C++ library
-add_library(${PROJECT_NAME}
-    ${HPP_SOURCES}
-    ${CPP_SOURCES}
-)
+##add_library(${PROJECT_NAME}
+##    ${HPP_SOURCES}
+##    ${CPP_SOURCES}
+##)
+
+## Kinematic helper library
+file(GLOB_RECURSE KIN_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
+    include/kinematics_helper.hpp
+    include/common.hpp)
+file(GLOB_RECURSE KIN_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
+    src/kinematics_helper.cpp
+    src/common.cpp)
+add_library(kinematics_helper ${KIN_CPP_SOURCES} ${KIN_HPP_SOURCES})
+target_link_libraries(kinematics_helper ${catkin_LIBRARIES})
+
+## Trajectory planner library
+file(GLOB_RECURSE TRAJ_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
+    include/trajectory_planner.hpp
+    include/kinematics_helper.hpp
+    include/common.hpp)
+file(GLOB_RECURSE TRAJ_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
+    src/trajectory_planner.cpp
+    src/kinematics_helper.cpp
+    src/common.cpp)
+add_library(trajectory_planner ${TRAJ_CPP_SOURCES} ${TRAJ_HPP_SOURCES})
+target_link_libraries(trajectory_planner ${catkin_LIBRARIES})
+
+## Path Trajectory planner library
+file(GLOB_RECURSE PTRAJ_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
+    include/path_trajectory_planner.hpp
+    include/trajectory_planner.hpp
+    include/kinematics_helper.hpp
+    include/common.hpp)
+file(GLOB_RECURSE PTRAJ_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
+    src/path_trajectory_planner.cpp
+    src/trajectory_planner.cpp
+    src/kinematics_helper.cpp
+    src/common.cpp)
+add_library(path_trajectory_planner ${PTRAJ_CPP_SOURCES} ${PTRAJ_HPP_SOURCES})
+target_link_libraries(path_trajectory_planner ${catkin_LIBRARIES})
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -154,9 +194,9 @@ add_library(${PROJECT_NAME}
 # add_dependencies(aros_moveit_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}
-   ${catkin_LIBRARIES}
-)
+##target_link_libraries(${PROJECT_NAME}
+##   ${catkin_LIBRARIES}
+##)
 
 #############
 ## Install ##
@@ -202,15 +242,23 @@ if(TEST)
     enable_testing ()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
     include_directories(${GTEST_INCLUDE_DIRS})
+    SET( TEST_LIBRARIES ${GTEST_LIBRARIES} )
 
     ## Kinematics helper tests
-    set(PROJECT_TEST_NAME ${PROJECT_NAME}_kin_helper_test)
-    file(GLOB TEST_CPP_FILES ${PROJECT_SOURCE_DIR}/test/src/kin_helper_test.cpp)
-    ##file(GLOB TEST_HPP_FILES ${PROJECT_SOURCE_DIR}/test/include/kin_helper_test.hpp)
-    add_executable(${PROJECT_TEST_NAME} ${TEST_CPP_FILES})
-    SET( TEST_LIBRARIES ${GTEST_LIBRARIES} )
-    target_link_libraries(${PROJECT_TEST_NAME} ${catkin_LIBRARIES} ${TEST_LIBRARIES} ${PROJECT_NAME})
-    add_test (NAME Test_Kinematics_Helper COMMAND ${PROJECT_TEST_NAME})
+    set(PROJECT_KIN_TEST_NAME ${PROJECT_NAME}_kin_helper_test)
+    file(GLOB KIN_TEST_CPP_FILES ${PROJECT_SOURCE_DIR}/test/src/kin_helper_test.cpp)
+    ##file(GLOB KIN_TEST_HPP_FILES ${PROJECT_SOURCE_DIR}/test/include/kin_helper_test.hpp)
+    add_executable(${PROJECT_KIN_TEST_NAME} ${KIN_TEST_CPP_FILES})
+    target_link_libraries(${PROJECT_KIN_TEST_NAME} ${catkin_LIBRARIES} ${TEST_LIBRARIES} kinematics_helper)
+    add_test (NAME Test_Kinematics_Helper COMMAND ${PROJECT_KIN_TEST_NAME})
+
+    ## Trajectory planner tests
+    set(PROJECT_TRAJ_TEST_NAME ${PROJECT_NAME}_traj_planner_test)
+    file(GLOB TRAJ_TEST_CPP_FILES ${PROJECT_SOURCE_DIR}/test/src/traj_planner_test.cpp)
+    ##file(GLOB TRAJ_TEST_HPP_FILES ${PROJECT_SOURCE_DIR}/test/include/traj_planner_test.hpp)
+    add_executable(${PROJECT_TRAJ_TEST_NAME} ${TRAJ_TEST_CPP_FILES})
+    target_link_libraries(${PROJECT_TRAJ_TEST_NAME} ${catkin_LIBRARIES} ${TEST_LIBRARIES} trajectory_planner)
+    add_test (NAME Test_Trajectory_Planner COMMAND ${PROJECT_TRAJ_TEST_NAME})
 
 endif()
 

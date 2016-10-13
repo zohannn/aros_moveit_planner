@@ -11,7 +11,7 @@ using namespace std;
 int argcc;
 char** argvv;
 
-TEST(TestSuite_kin_helper, Test_goal1)
+TEST(TestSuite_kin_helper, Test_kin_goal1)
 {
     ros::init(argcc, argvv, "kinematics_helper_test_goal1");
     ros::NodeHandle nh;
@@ -19,8 +19,8 @@ TEST(TestSuite_kin_helper, Test_goal1)
     geometry_msgs::Pose goal1;
 
     goal1.position.x = -0.26;
-    goal1.position.y = 0.20;
-    goal1.position.z = 1.65;
+    goal1.position.y = 0.50;
+    goal1.position.z = 1.25;
     goal1.orientation.x = 0.755872;
     goal1.orientation.y = -0.612878;
     goal1.orientation.z = -0.0464803;

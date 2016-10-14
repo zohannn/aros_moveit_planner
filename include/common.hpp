@@ -7,6 +7,7 @@
 #define CAN_LOOK false
 #define ALLOW_REPLAN false
 #define FRAME_ID "base_link"
+#define SUPPORT_SURFACE "table_surface_link"
 
 #include <sstream>
 #include <ros/ros.h>

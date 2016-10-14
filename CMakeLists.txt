@@ -12,6 +12,8 @@ find_package(catkin REQUIRED
     moveit_core
     moveit_ros_planning_interface
     cmake_modules
+    actionlib
+    actionlib_msgs
 )
 
 ##find_package(cmake_modules REQUIRED)
@@ -183,6 +185,28 @@ file(GLOB_RECURSE PTRAJ_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLIN
 add_library(path_trajectory_planner ${PTRAJ_CPP_SOURCES} ${PTRAJ_HPP_SOURCES})
 target_link_libraries(path_trajectory_planner ${catkin_LIBRARIES})
 
+## Visualization tools library
+file(GLOB_RECURSE VIS_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
+     include/visualization_tools.hpp
+     )
+file(GLOB_RECURSE VIS_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
+     src/visualization_tools.cpp
+    )
+add_library(visualization_tools ${VIS_CPP_SOURCES} ${VIS_HPP_SOURCES})
+target_link_libraries(visualization_tools ${catkin_LIBRARIES})
+
+## Humanoid planner library
+file(GLOB_RECURSE HP_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
+     include/humanoid_planner.hpp
+     include/common.hpp
+     )
+file(GLOB_RECURSE HP_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
+     src/humanoid_planner.cpp
+     src/common.cpp
+    )
+add_library(humanoid_planner ${HP_CPP_SOURCES} ${HP_HPP_SOURCES})
+target_link_libraries(humanoid_planner ${catkin_LIBRARIES})
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
@@ -261,6 +285,32 @@ if(TEST)
     add_executable(${PROJECT_TRAJ_TEST_NAME} ${TRAJ_TEST_CPP_FILES})
     target_link_libraries(${PROJECT_TRAJ_TEST_NAME} ${catkin_LIBRARIES} ${TEST_LIBRARIES} trajectory_planner)
     add_test (NAME Test_Trajectory_Planner COMMAND ${PROJECT_TRAJ_TEST_NAME})
+
+    ## Path Trajectory planner tests
+    set(PROJECT_PTRAJ_TEST_NAME ${PROJECT_NAME}_path_traj_planner_test)
+    file(GLOB PTRAJ_TEST_CPP_FILES ${PROJECT_SOURCE_DIR}/test/src/path_traj_planner_test.cpp)
+    ##file(GLOB PTRAJ_TEST_HPP_FILES ${PROJECT_SOURCE_DIR}/test/include/path_traj_planner_test.hpp)
+    add_executable(${PROJECT_PTRAJ_TEST_NAME} ${PTRAJ_TEST_CPP_FILES})
+    target_link_libraries(${PROJECT_PTRAJ_TEST_NAME} ${catkin_LIBRARIES} ${TEST_LIBRARIES} path_trajectory_planner)
+    add_test (NAME Test_Path_Trajectory_Planner COMMAND ${PROJECT_PTRAJ_TEST_NAME})
+
+    ## Visualization tools tests
+    set(PROJECT_VIS_TEST_NAME ${PROJECT_NAME}_visualization_test)
+    file(GLOB VIS_TEST_CPP_FILES ${PROJECT_SOURCE_DIR}/test/src/visualization_tools_test.cpp)
+    ##file(GLOB VIS_TEST_HPP_FILES ${PROJECT_SOURCE_DIR}/test/include/visualization_tools_test.hpp)
+    add_executable(${PROJECT_VIS_TEST_NAME} ${VIS_TEST_CPP_FILES})
+    target_link_libraries(${PROJECT_VIS_TEST_NAME} ${catkin_LIBRARIES} ${TEST_LIBRARIES}
+        trajectory_planner visualization_tools)
+    add_test (NAME Test_Visualization_tools COMMAND ${PROJECT_VIS_TEST_NAME})
+
+    ## Humanoid planner tests
+    set(PROJECT_HP_TEST_NAME ${PROJECT_NAME}_humanoid_planner_test)
+    file(GLOB HP_TEST_CPP_FILES ${PROJECT_SOURCE_DIR}/test/src/humanoid_planner_test.cpp)
+    ##file(GLOB HP_TEST_HPP_FILES ${PROJECT_SOURCE_DIR}/test/include/humanoid_planner_test.hpp)
+    add_executable(${PROJECT_HP_TEST_NAME} ${HP_TEST_CPP_FILES})
+    target_link_libraries(${PROJECT_HP_TEST_NAME} ${catkin_LIBRARIES} ${TEST_LIBRARIES}
+        humanoid_planner)
+    add_test (NAME Test_Humanoid_planner COMMAND ${PROJECT_HP_TEST_NAME})
 
 endif()
 

@@ -69,7 +69,7 @@ private:
     boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::PickupAction> > pick_action_client; /**< pickup action client */
     boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::PlaceAction> > place_action_client; /**< place action client */
     boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction> > move_action_client;/**< move group action client */
-    boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction> > execute_action_client;/**< execute action client */
+    //boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction> > execute_action_client;/**< execute action client */
 
     /**
      * @brief execute
@@ -139,6 +139,20 @@ public:
      * @return
      */
     PlanningResultPtr plan(const geometry_msgs::Pose &pose_goal);
+
+    /**
+     * @brief plan_to_park
+     * Plan the trajectory to go to the park posture
+     * @return
+     */
+    PlanningResultPtr plan_to_park();
+
+    /**
+     * @brief plan_to_home
+     * Plan the trajectory to go to the home posture
+     * @return
+     */
+    PlanningResultPtr plan_to_home();
 
     /**
      * @brief execute

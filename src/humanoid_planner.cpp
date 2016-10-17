@@ -52,28 +52,56 @@ HumanoidPlanner::HumanoidPlanner(const string &arm)
     goal_orientation_tolerance = 1e-3; // ~0.1 deg
     planner_id = "";
 
+
     ROS_INFO("Connecting to pickup action...");
     string pickup_topic = "pickup";
     pick_action_client.reset(new actionlib::SimpleActionClient<moveit_msgs::PickupAction>(pickup_topic, true));
-    pick_action_client->waitForServer();
+
+    if (!pick_action_client->waitForServer(ros::Duration(5.0)))
+    {
+        ROS_ERROR("Pick up action client NOT available!");
+    }else{
+        ROS_INFO("Pick up action client available!");
+    }
 
     ROS_INFO("Connecting to place action...");
     string place_topic = "place";
     place_action_client.reset(new actionlib::SimpleActionClient<moveit_msgs::PlaceAction>(place_topic, true));
-    place_action_client->waitForServer();
+
+    if (!place_action_client->waitForServer(ros::Duration(5.0)))
+    {
+        ROS_ERROR("Place action client NOT available!");
+    }else{
+        ROS_INFO("Place action client available!");
+    }
 
     ROS_INFO("Connecting to move_group action...");
     string move_group_topic = "move_group";
     move_action_client.reset(new actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction>(move_group_topic, true));
-    move_action_client->waitForServer();
 
+    if(!move_action_client->waitForServer(ros::Duration(5.0)))
+    {
+        ROS_ERROR("Move action client NOT available!");
+    }else{
+        ROS_INFO("Move action client available!");
+    }
+
+    /*
     ROS_INFO("Connecting to execute trajectory action...");
     string execute_topic = "execute_traj";
     execute_action_client.reset(new actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction>(execute_topic,true));
-    execute_action_client->waitForServer();
 
+    if(!execute_action_client->waitForServer(ros::Duration(5.0)))
+    {
+        ROS_ERROR("Execute action client NOT available!");
+    }else{
+        ROS_INFO("Execute action client available!");
+    }
+    */
     execution_client = nh.serviceClient<ExecuteKnownTrajectory>("execute_kinematic_path");
     attached_object_pub = nh.advertise<AttachedCollisionObject>("attached_collision_object", 1, false);
+
+
 
 
 }
@@ -136,6 +164,47 @@ void HumanoidPlanner::setSupportSurfaceName(const string name)
 string HumanoidPlanner::getSupportSurfaceName()
 {
     return support_surface;
+}
+
+PlanningResultPtr HumanoidPlanner::plan_to_park()
+{
+    PlanningResultPtr result;
+    result.reset(new PlanningResult);
+    result->type = HumanoidPlanner::GOAL;
+
+    moveit_msgs::MoveGroupGoal goal;
+    goal.request.group_name = group_name;
+    goal.request.num_planning_attempts = planning_attempts;
+    goal.request.allowed_planning_time = planning_time;
+    goal.request.planner_id = planner_id;
+
+    /*
+    geometry_msgs::PoseStamped p;
+    p.header.frame_id = FRAME_ID;
+    p.header.stamp = ros::Time::now();
+    p.pose = pose_goal;
+
+    //vector<Constraints> constraints;
+    Constraints c =	kinematic_constraints::constructGoalConstraints(end_effector_link,	p,
+                                                                    goal_position_tolerance,
+                                                                    goal_orientation_tolerance);
+                                                                    */
+
+    //moveit_msgs::RobotState state;
+    //state.
+
+    moveit_msgs::Constraints c;
+    moveit_msgs::JointConstraint jc = c.joint_constraints;
+    jc.joint_name;
+
+    goal.planning_options.plan_only = true;
+    goal.planning_options.look_around = false;
+    goal.planning_options.replan = false;
+    goal.planning_options.planning_scene_diff.is_diff = true;
+    goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
+    goal.request.goal_constraints.push_back(c);
+
+    move_action_client->sendGoal(goal);
 }
 
 PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vector<Grasp> &grasps)
@@ -377,39 +446,31 @@ bool HumanoidPlanner::execute(const PlanningResultPtr &plan)
 bool HumanoidPlanner::execute(const RobotTrajectory &trajectory)
 {
 
-    bool result = false;
+    ExecuteKnownTrajectory msg;
+    ExecuteKnownTrajectoryRequest &request = msg.request;
 
-    if(!execute_action_client){
-        ROS_ERROR_STREAM("Execute action client not found");
-        return result;
+    request.wait_for_execution = true;
+    request.trajectory = trajectory;
+
+    bool success = execution_client.call(msg);
+
+
+    if (success) {
+        MoveItErrorCodes &code = msg.response.error_code;
+
+        if (code.val == MoveItErrorCodes::SUCCESS) {
+            ROS_INFO("Execution finished successfully.");
+        } else {
+            ROS_ERROR("Execution finished with error_code '%d'", code.val);
+            return false;
+        }
+
+    } else {
+        ROS_ERROR("Execution failed!");
+        return false;
     }
 
-    if(!execute_action_client->isServerConnected()){
-        ROS_ERROR_STREAM("Execute action server not connected");
-        return result;
-    }
-
-    moveit_msgs::ExecuteTrajectoryGoal goal;
-
-    goal.trajectory=trajectory;
-
-    execute_action_client->sendGoal(goal);
-
-    ROS_DEBUG("Goal sent for trajectory execution");
-    if (!execute_action_client->waitForResult()) {
-        ROS_INFO_STREAM("Execution action returned early");
-    }
-
-    if(execute_action_client->getState()==actionlib::SimpleClientGoalState::SUCCEEDED){
-        ROS_INFO("Call to execute action server succeeded!");
-        result=true;
-    }else{
-        ROS_WARN_STREAM("Fail: " << execute_action_client->getState().toString() << ": " << execute_action_client->getState().getText());
-    }
-
-
-
-    return result;
+    return true;
 }
 
 bool HumanoidPlanner::attachObject(const string &object)

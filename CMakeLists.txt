@@ -14,14 +14,16 @@ find_package(catkin REQUIRED
     cmake_modules
     actionlib
     actionlib_msgs
+    pluginlib
+    geometric_shapes
 )
 
 ##find_package(cmake_modules REQUIRED)
 
-find_package( Eigen REQUIRED )
-include_directories(${EIGEN_INCLUDE_DIR})
+find_package( Eigen3 REQUIRED )
+include_directories(${EIGEN3_INCLUDE_DIR})
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -110,9 +112,12 @@ include_directories(${EIGEN_INCLUDE_DIR})
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES aros_moveit_planner
-#  CATKIN_DEPENDS other_catkin_pkg
+   INCLUDE_DIRS include
+ # LIBRARIES humanoid_planner
+CATKIN_DEPENDS 
+    moveit_core
+    moveit_ros_planning_interface
+    interactive_markers
 #  DEPENDS system_lib
 )
 
@@ -137,6 +142,9 @@ set(DOC 1)
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
+include_directories(SYSTEM ${Boost_INCLUDE_DIR})
+include_directories(${catkin_INCLUDE_DIRS})
+link_directories(${catkin_LIBRARY_DIRS})
 
 # sources
 ##file(GLOB_RECURSE HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS include/*.hpp)
@@ -206,6 +214,7 @@ file(GLOB_RECURSE HP_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
     )
 add_library(humanoid_planner ${HP_CPP_SOURCES} ${HP_HPP_SOURCES})
 target_link_libraries(humanoid_planner ${catkin_LIBRARIES})
+
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

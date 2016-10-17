@@ -168,43 +168,36 @@ string HumanoidPlanner::getSupportSurfaceName()
 
 PlanningResultPtr HumanoidPlanner::plan_to_park()
 {
-    PlanningResultPtr result;
-    result.reset(new PlanningResult);
-    result->type = HumanoidPlanner::GOAL;
 
-    moveit_msgs::MoveGroupGoal goal;
-    goal.request.group_name = group_name;
-    goal.request.num_planning_attempts = planning_attempts;
-    goal.request.allowed_planning_time = planning_time;
-    goal.request.planner_id = planner_id;
 
-    /*
-    geometry_msgs::PoseStamped p;
-    p.header.frame_id = FRAME_ID;
-    p.header.stamp = ros::Time::now();
-    p.pose = pose_goal;
+    // park posture
+    std::vector<double> group_variable_values;
 
-    //vector<Constraints> constraints;
-    Constraints c =	kinematic_constraints::constructGoalConstraints(end_effector_link,	p,
-                                                                    goal_position_tolerance,
-                                                                    goal_orientation_tolerance);
-                                                                    */
+    robot_state::RobotState robot_state(robot_model);
+    const robot_state::JointModelGroup *joint_model_group = robot_state.getJointModelGroup(group_name);
+    robot_state.setToDefaultValues(joint_model_group,"park_"+group_name);
 
-    //moveit_msgs::RobotState state;
-    //state.
+    robot_state.copyJointGroupPositions(joint_model_group,group_variable_values);
 
-    moveit_msgs::Constraints c;
-    moveit_msgs::JointConstraint jc = c.joint_constraints;
-    jc.joint_name;
+    PlanningResultPtr result = plan(group_variable_values);
 
-    goal.planning_options.plan_only = true;
-    goal.planning_options.look_around = false;
-    goal.planning_options.replan = false;
-    goal.planning_options.planning_scene_diff.is_diff = true;
-    goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
-    goal.request.goal_constraints.push_back(c);
+    return result;
+}
 
-    move_action_client->sendGoal(goal);
+PlanningResultPtr HumanoidPlanner::plan_to_home()
+{
+    // home posture
+    std::vector<double> group_variable_values;
+
+    robot_state::RobotState robot_state(robot_model);
+    const robot_state::JointModelGroup *joint_model_group = robot_state.getJointModelGroup(group_name);
+    robot_state.setToDefaultValues(joint_model_group,"home_"+group_name);
+
+    robot_state.copyJointGroupPositions(joint_model_group,group_variable_values);
+
+    PlanningResultPtr result = plan(group_variable_values);
+
+    return result;
 }
 
 PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vector<Grasp> &grasps)
@@ -357,6 +350,74 @@ PlanningResultPtr HumanoidPlanner::plan_place(const string &object_id, const vec
     }
 
     return result;
+}
+
+PlanningResultPtr HumanoidPlanner::plan(const std::vector<double> posture)
+{
+    PlanningResultPtr result;
+    result.reset(new PlanningResult);
+    result->type = HumanoidPlanner::GOAL;
+
+    moveit_msgs::MoveGroupGoal goal;
+    goal.request.group_name = group_name;
+    goal.request.num_planning_attempts = planning_attempts;
+    goal.request.allowed_planning_time = planning_time;
+    goal.request.planner_id = planner_id;
+
+    moveit_msgs::Constraints c;
+
+    for (size_t i=0; i<posture.size(); ++i)
+    {
+        moveit_msgs::JointConstraint jcm;
+        ostringstream convert;
+        convert << i+1;
+        jcm.joint_name = "right_joint"+convert.str();
+        jcm.position = posture[i];
+        jcm.tolerance_above = 0.05;
+        jcm.tolerance_below = 0.05;
+        jcm.weight = 1.0;
+        c.joint_constraints.push_back(jcm);
+    }
+
+    goal.planning_options.plan_only = true;
+    goal.planning_options.look_around = false;
+    goal.planning_options.replan = false;
+    goal.planning_options.planning_scene_diff.is_diff = true;
+    goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
+    goal.request.goal_constraints.push_back(c);
+
+    move_action_client->sendGoal(goal);
+
+    ROS_DEBUG("Sent planning request for posture");
+
+    if (!move_action_client->waitForResult()) {
+        ROS_INFO_STREAM("MoveGroup action returned early");
+    }
+
+    moveit_msgs::MoveGroupResultConstPtr res = move_action_client->getResult();
+
+    if (move_action_client->getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
+        ROS_INFO("Call to move_group action server succeeded!");
+
+        result->status = HumanoidPlanner::SUCCESS;
+        result->status_msg = "Call to pick action server succeeded!";
+        result->start_state = res->trajectory_start;
+        result->trajectory_descriptions.push_back("target");
+        result->trajectory_stages.push_back(res->planned_trajectory);
+
+    } else {
+        ROS_WARN_STREAM("Fail: " << move_action_client->getState().toString() << ": "
+                        << move_action_client->getState().getText());
+
+        result->status = HumanoidPlanner::FAILURE;
+        stringstream ss;
+        ss << "Planning failed with status code '" << res->error_code.val << "'";
+        result->status_msg = ss.str();
+    }
+
+    return result;
+
+
 }
 
 PlanningResultPtr HumanoidPlanner::plan(const geometry_msgs::Pose &pose_goal)

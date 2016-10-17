@@ -2,6 +2,7 @@
 #define HUMANOID_PLANNER_HPP
 
 #include <ros/ros.h>
+#include <string>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -139,6 +140,14 @@ public:
      * @return
      */
     PlanningResultPtr plan(const geometry_msgs::Pose &pose_goal);
+
+    /**
+     * @brief plan
+     * Plan the movement to reach the given posture
+     * @param posture
+     * @return
+     */
+    PlanningResultPtr plan(const std::vector<double> posture);
 
     /**
      * @brief plan_to_park

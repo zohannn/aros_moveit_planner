@@ -41,11 +41,12 @@ public:
 
         planning_scene_interface.reset(new PlanningSceneInterface());
         // Create PlanningHelper for one of the planning groups
-        h_planner.reset(new HumanoidPlanner("right"));
+        string arm = "right";
+        h_planner.reset(new HumanoidPlanner(arm));
 
         h_planner->setAllowedPlanningTime(5);
         h_planner->setPlanningAttempts(5);
-        h_planner->setPlanningGroupName("right_arm");
+        h_planner->setPlanningGroupName(arm+"_arm");
         h_planner->setSupportSurfaceName("table");
         h_planner->setPlannerId(planner_id);
 
@@ -264,30 +265,23 @@ public:
 
         ros::Duration(5).sleep();
 
-         /*
 
-//		ROS_INFO_STREAM_NAMED("pick_place", "Returning to default position");
 
-//		geometry_msgs::Pose pose;
-//		pose.position.x = 0;
-//		pose.position.y = 0;
-//		pose.position.z = 0.5;
-//		pose.orientation.x = 0;
-//		pose.orientation.y = 0;
-//		pose.orientation.z = 0;
-//		pose.orientation.w = 1;
+        ROS_INFO_STREAM_NAMED("pick_place", "Going to park position");
 
-//        PlanningResultPtr plan = planning_helper_->plan(pose);
-//        if(plan->status == PlanningHelper::SUCCESS) {
-//			ROS_INFO("Motion plan computed - executing trajectory...");
-//            planning_helper_->execute(plan);
-//		} else {
-//			ROS_WARN("Planning was not successful!");
-//		}
+
+
+       PlanningResultPtr plan = h_planner->plan_to_park();
+       if(plan->status == HumanoidPlanner::SUCCESS) {
+            ROS_INFO("Motion plan computed - executing trajectory...");
+            h_planner->execute(plan);
+        } else {
+            ROS_WARN("Planning was not successful!");
+        }
 
         ROS_INFO("Finished");
 
-        */
+
 
         return true;
     }

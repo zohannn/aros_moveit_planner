@@ -44,7 +44,9 @@ HumanoidPlanner::HumanoidPlanner(const string &arm)
     // get the name of the end effector link in the arm...
     end_effector_link = joint_model_group->getLinkModelNames().back();
     ROS_INFO("End effector link: %s", end_effector_link.c_str());
-    group_name = name;
+    group_name_arm = name;
+    group_name_hand = arm + "_hand";
+    group_name_arm_hand = arm + "_arm_hand";
     planning_time = 5.0;
     planning_attempts = 5;
     goal_joint_tolerance = 1e-4;
@@ -86,6 +88,7 @@ HumanoidPlanner::HumanoidPlanner(const string &arm)
         ROS_INFO("Move action client available!");
     }
 
+
     /*
     ROS_INFO("Connecting to execute trajectory action...");
     string execute_topic = "execute_traj";
@@ -100,7 +103,37 @@ HumanoidPlanner::HumanoidPlanner(const string &arm)
     */
     execution_client = nh.serviceClient<ExecuteKnownTrajectory>("execute_kinematic_path");
     attached_object_pub = nh.advertise<AttachedCollisionObject>("attached_collision_object", 1, false);
+    get_planning_scene_client = nh.serviceClient<GetPlanningScene>("get_planning_scene");
+    apply_planning_scene_client = nh.serviceClient<ApplyPlanningScene>("apply_planning_scene");
 
+    // set the default park state of the planning groups
+    std::vector<double> group_variable_values;
+    robot_state::RobotState start_state(robot_model);
+    const robot_state::JointModelGroup *joint_model_group = start_state.getJointModelGroup("arms_hands");
+    start_state.setToDefaultValues(joint_model_group,"park_arms_hands");
+    start_state.copyJointGroupPositions(joint_model_group,group_variable_values);
+
+    GetPlanningScene msg;
+    PlanningScene scene;
+    if(get_planning_scene_client.call(msg)){
+        ROS_INFO("Got the planning scene");
+        scene = msg.response.scene;
+        JointState jstate = scene.robot_state.joint_state;
+        jstate.name = joint_model_group->getActiveJointModelNames();
+        jstate.position = group_variable_values;
+        scene.robot_state.joint_state = jstate;
+        scene.is_diff=true;
+
+        ApplyPlanningScene msg_apply;
+        msg_apply.request.scene=scene;
+        if(apply_planning_scene_client.call(msg_apply)){
+            ROS_INFO("Robot start state applied");
+        }else{
+            ROS_WARN("Applying the planning scene failure");
+        }
+    }else{
+       ROS_WARN("Getting the planning scene failue");
+    }
 
 
 
@@ -118,12 +151,12 @@ void HumanoidPlanner::setPlanningGroupName(const string &name)
         ROS_FATAL_STREAM(error);
         throw std::runtime_error(error);
     }
-    group_name = name;
+    group_name_arm = name;
 }
 
 string HumanoidPlanner::getPlanningGroupName()
 {
-    return group_name;
+    return group_name_arm;
 }
 
 void HumanoidPlanner::setPlannerId(const string &id)
@@ -166,39 +199,58 @@ string HumanoidPlanner::getSupportSurfaceName()
     return support_surface;
 }
 
-PlanningResultPtr HumanoidPlanner::plan_to_park()
+PlanningResultPtr HumanoidPlanner::plan_arm_to_default(const std::string def_posture)
 {
 
 
-    // park posture
     std::vector<double> group_variable_values;
 
     robot_state::RobotState robot_state(robot_model);
-    const robot_state::JointModelGroup *joint_model_group = robot_state.getJointModelGroup(group_name);
-    robot_state.setToDefaultValues(joint_model_group,"park_"+group_name);
+    const robot_state::JointModelGroup *joint_model_group = robot_state.getJointModelGroup(group_name_arm);
+    robot_state.setToDefaultValues(joint_model_group,def_posture+"_"+group_name_arm);
 
     robot_state.copyJointGroupPositions(joint_model_group,group_variable_values);
 
-    PlanningResultPtr result = plan(group_variable_values);
+    PlanningResultPtr result = plan(group_name_arm,group_variable_values);
 
     return result;
 }
 
-PlanningResultPtr HumanoidPlanner::plan_to_home()
+PlanningResultPtr HumanoidPlanner::plan_hand_to_default(const std::string def_posture)
 {
-    // home posture
+
+
     std::vector<double> group_variable_values;
 
     robot_state::RobotState robot_state(robot_model);
-    const robot_state::JointModelGroup *joint_model_group = robot_state.getJointModelGroup(group_name);
-    robot_state.setToDefaultValues(joint_model_group,"home_"+group_name);
+    const robot_state::JointModelGroup *joint_model_group = robot_state.getJointModelGroup(group_name_hand);
+    robot_state.setToDefaultValues(joint_model_group,def_posture+"_"+group_name_hand);
 
     robot_state.copyJointGroupPositions(joint_model_group,group_variable_values);
 
-    PlanningResultPtr result = plan(group_variable_values);
+    PlanningResultPtr result = plan(group_name_hand,group_variable_values);
 
     return result;
 }
+
+PlanningResultPtr HumanoidPlanner::plan_arm_hand_to_default(const std::string def_posture)
+{
+
+
+    std::vector<double> group_variable_values;
+
+    robot_state::RobotState robot_state(robot_model);
+    const robot_state::JointModelGroup *joint_model_group = robot_state.getJointModelGroup(group_name_arm_hand);
+    robot_state.setToDefaultValues(joint_model_group,def_posture+"_"+group_name_arm_hand);
+
+    robot_state.copyJointGroupPositions(joint_model_group,group_variable_values);
+
+    PlanningResultPtr result = plan(group_name_arm_hand,group_variable_values);
+
+    return result;
+}
+
+
 
 PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vector<Grasp> &grasps)
 {
@@ -226,7 +278,7 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vect
     moveit_msgs::PickupGoal goal;
 
     goal.target_name = object_id;
-    goal.group_name = group_name;
+    goal.group_name = group_name_arm;
     goal.end_effector = end_effector;
     goal.allowed_planning_time = planning_time;
     goal.support_surface_name = support_surface;
@@ -303,7 +355,7 @@ PlanningResultPtr HumanoidPlanner::plan_place(const string &object_id, const vec
     moveit_msgs::PlaceGoal goal;
 
     goal.attached_object_name = object_id;
-    goal.group_name = group_name;
+    goal.group_name = group_name_arm;
     goal.allowed_planning_time = planning_time;
     goal.support_surface_name = support_surface;
     goal.planner_id = planner_id;
@@ -352,27 +404,31 @@ PlanningResultPtr HumanoidPlanner::plan_place(const string &object_id, const vec
     return result;
 }
 
-PlanningResultPtr HumanoidPlanner::plan(const std::vector<double> posture)
+PlanningResultPtr HumanoidPlanner::plan(const std::string group, const std::vector<double> posture)
 {
     PlanningResultPtr result;
     result.reset(new PlanningResult);
     result->type = HumanoidPlanner::GOAL;
 
     moveit_msgs::MoveGroupGoal goal;
-    goal.request.group_name = group_name;
+    goal.request.group_name = group;
     goal.request.num_planning_attempts = planning_attempts;
     goal.request.allowed_planning_time = planning_time;
     goal.request.planner_id = planner_id;
+
+
+    robot_state::RobotState robot_state(robot_model);
+    const robot_state::JointModelGroup *joint_model_group = robot_state.getJointModelGroup(group);
+
+    std::vector<string> joint_names = joint_model_group->getActiveJointModelNames();
 
     moveit_msgs::Constraints c;
 
     for (size_t i=0; i<posture.size(); ++i)
     {
         moveit_msgs::JointConstraint jcm;
-        ostringstream convert;
-        convert << i+1;
-        jcm.joint_name = "right_joint"+convert.str();
-        jcm.position = posture[i];
+        jcm.joint_name = joint_names.at(i);
+        jcm.position = posture.at(i);
         jcm.tolerance_above = 0.05;
         jcm.tolerance_below = 0.05;
         jcm.weight = 1.0;
@@ -415,6 +471,8 @@ PlanningResultPtr HumanoidPlanner::plan(const std::vector<double> posture)
         result->status_msg = ss.str();
     }
 
+
+
     return result;
 
 
@@ -427,7 +485,7 @@ PlanningResultPtr HumanoidPlanner::plan(const geometry_msgs::Pose &pose_goal)
     result->type = HumanoidPlanner::GOAL;
 
     moveit_msgs::MoveGroupGoal goal;
-    goal.request.group_name = group_name;
+    goal.request.group_name = group_name_arm;
     goal.request.num_planning_attempts = planning_attempts;
     goal.request.allowed_planning_time = planning_time;
     goal.request.planner_id = planner_id;

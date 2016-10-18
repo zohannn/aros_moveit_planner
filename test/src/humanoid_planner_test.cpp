@@ -271,7 +271,7 @@ public:
 
 
 
-       PlanningResultPtr plan = h_planner->plan_to_park();
+       PlanningResultPtr plan = h_planner->plan_arm_hand_to_default("park");
        if(plan->status == HumanoidPlanner::SUCCESS) {
             ROS_INFO("Motion plan computed - executing trajectory...");
             h_planner->execute(plan);

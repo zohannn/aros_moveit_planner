@@ -15,11 +15,17 @@
 #include <moveit_msgs/MoveGroupAction.h>
 #include <moveit_msgs/ExecuteTrajectoryAction.h>
 #include <moveit_msgs/Grasp.h>
+#include <moveit_msgs/PlanningScene.h>
+#include <moveit_msgs/PlanningSceneComponents.h>
+#include <moveit_msgs/GetPlanningScene.h>
+#include <moveit_msgs/ApplyPlanningScene.h>
+#include <sensor_msgs/JointState.h>
 
 #include "../include/common.hpp"
 
 using namespace std;
 using namespace moveit_msgs;
+using namespace sensor_msgs;
 using namespace common;
 
 namespace humanoid_planning {
@@ -48,7 +54,9 @@ class HumanoidPlanner{
 
 private:
 
-    string group_name;/**< planning group */
+    string group_name_arm;/**< arm planning group */
+    string group_name_hand;/**< hand planning group */
+    string group_name_arm_hand;/**< arm hand planning group */
     string end_effector;/**< group of the end effector */
     string end_effector_link;/**< end effector that is linking to the planning group */
     double planning_time;/**< maximum allowed planning time */
@@ -63,7 +71,8 @@ private:
     ros::Publisher pub;/**< ros publisher for pickup messages */
     ros::ServiceClient execution_client;/**< ros service client for execution of the trajectory */
     ros::Publisher attached_object_pub;/**< ros publisher of the attached collision object */
-
+    ros::ServiceClient get_planning_scene_client;/**< ros service client for getting the planning scene */
+    ros::ServiceClient apply_planning_scene_client; /**< ros service client to apply the planning scene */
     robot_model::RobotModelConstPtr robot_model;/**< model of the loaded robot*/
     const robot_model::JointModelGroup *joint_model_group;/**< joint group of the planning group */
 
@@ -145,23 +154,37 @@ public:
      * @brief plan
      * Plan the movement to reach the given posture
      * @param posture
+     * @param group
      * @return
      */
-    PlanningResultPtr plan(const std::vector<double> posture);
+    PlanningResultPtr plan(const std::string group, const std::vector<double> posture);
 
     /**
-     * @brief plan_to_park
-     * Plan the trajectory to go to the park posture
+     * @brief plan_arm_to_default
+     * Plan the trajectory towards the default posture of the arm
+     * @param def_posture
+     * It must be "park" or "home"
      * @return
      */
-    PlanningResultPtr plan_to_park();
+    PlanningResultPtr plan_arm_to_default(const std::string def_posture);
 
     /**
-     * @brief plan_to_home
-     * Plan the trajectory to go to the home posture
+     * @brief plan_hand_to_default
+     * Plan the trajectory towards the default posture of the hand
+     * @param def_posture
+     * It must be "park" or "home"
      * @return
      */
-    PlanningResultPtr plan_to_home();
+    PlanningResultPtr plan_hand_to_default(const std::string def_posture);
+
+    /**
+     * @brief plan_arm_hand_to_default
+     * Plan the trajectory towards the default posture of the arm_hand
+     * @param def_posture
+     * It must be "park" or "home"
+     * @return
+     */
+    PlanningResultPtr plan_arm_hand_to_default(const std::string def_posture);
 
     /**
      * @brief execute

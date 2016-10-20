@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "../../include/path_trajectory_planner.hpp"
+#include "../../include/aros_moveit_planner/path_trajectory_planner.hpp"
 
 
 using namespace trajectory_planner_moveit;

@@ -2,8 +2,8 @@
 #define PATH_TRAJECTORY_PLANNER_HPP
 
 #include <moveit_msgs/GetCartesianPath.h>
-#include "../include/trajectory_planner.hpp"
-#include "../include/base_planner.hpp"
+#include "trajectory_planner.hpp"
+#include "base_planner.hpp"
 
 using namespace std;
 

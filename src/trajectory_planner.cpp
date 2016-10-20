@@ -1,4 +1,4 @@
-#include "../include/trajectory_planner.hpp"
+#include "../include/aros_moveit_planner/trajectory_planner.hpp"
 #include <moveit/kinematic_constraints/utils.h>
 
 using namespace std;

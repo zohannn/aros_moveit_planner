@@ -1,4 +1,4 @@
-#include "../include/common.hpp"
+#include "../include/aros_moveit_planner/common.hpp"
 
 namespace common {
 

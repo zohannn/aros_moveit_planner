@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 
-#include "../../include/trajectory_planner.hpp"
+#include "../../include/aros_moveit_planner/trajectory_planner.hpp"
 
 
 using namespace trajectory_planner_moveit;

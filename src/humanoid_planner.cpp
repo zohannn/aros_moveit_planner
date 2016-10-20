@@ -1,7 +1,7 @@
 #include <moveit/kinematic_constraints/utils.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
 
-#include "../include/humanoid_planner.hpp"
+#include "../include/aros_moveit_planner/humanoid_planner.hpp"
 
 using namespace std;
 

@@ -1,5 +1,5 @@
 
-#include "../include/kinematics_helper.hpp"
+#include "../include/aros_moveit_planner/kinematics_helper.hpp"
 
 
 using namespace std;

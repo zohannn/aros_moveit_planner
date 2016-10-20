@@ -21,7 +21,7 @@
 #include <moveit_msgs/ApplyPlanningScene.h>
 #include <sensor_msgs/JointState.h>
 
-#include "../include/common.hpp"
+#include "common.hpp"
 
 using namespace std;
 using namespace moveit_msgs;

@@ -1,7 +1,7 @@
 
 #include <moveit/kinematic_constraints/utils.h>
-#include "../include/common.hpp"
-#include "../include/path_trajectory_planner.hpp"
+#include "../include/aros_moveit_planner/common.hpp"
+#include "../include/aros_moveit_planner/path_trajectory_planner.hpp"
 
 using namespace ros;
 

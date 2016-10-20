@@ -1,4 +1,4 @@
-#include "../include/visualization_tools.hpp"
+#include "../include/aros_moveit_planner/visualization_tools.hpp"
 
 using namespace std;
 using namespace ros;

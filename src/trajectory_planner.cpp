@@ -150,7 +150,7 @@ bool TrajectoryPlanner::plan(const geometry_msgs::Pose &goal, moveit_msgs::Motio
             moveit_msgs::Constraints c;
             c.joint_constraints.resize(joint_names.size());
 
-            for (int j = 0; j < joint_names.size(); ++j) {
+            for (size_t j = 0; j < joint_names.size(); ++j) {
                 moveit_msgs::JointConstraint &jc = c.joint_constraints[j];
                 jc.joint_name = joint_names[j];
                 jc.position = values[j];

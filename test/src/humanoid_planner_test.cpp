@@ -41,12 +41,11 @@ public:
 
         planning_scene_interface.reset(new PlanningSceneInterface());
         // Create PlanningHelper for one of the planning groups
-        string arm = "right";
-        h_planner.reset(new HumanoidPlanner(arm));
+        h_planner.reset(new HumanoidPlanner());
 
         h_planner->setAllowedPlanningTime(5);
         h_planner->setPlanningAttempts(5);
-        h_planner->setPlanningGroupName(arm+"_arm");
+        h_planner->setPlanningGroupName("right_arm");
         h_planner->setSupportSurfaceName("table");
         h_planner->setPlannerId(planner_id);
 

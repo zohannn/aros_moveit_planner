@@ -66,6 +66,8 @@ private:
     double goal_orientation_tolerance;/**< tolerance on the goal end-effector orientation [rad]*/
     string planner_id;/**< identity of the planner */
     string support_surface;/**< support surface for pick and place */
+    string scenario_path;/**< path of the scenario file*/
+    int scenario_id;/**< id of the current scenario */
 
     ros::NodeHandle nh;/**< ros node handle */
     ros::Publisher pub;/**< ros publisher for pickup messages */
@@ -115,9 +117,15 @@ public:
 
     /**
      * @brief HumanoidPlanner, a constructor
-     * @param arm
      */
-    HumanoidPlanner(const string &arm);
+    HumanoidPlanner();
+
+    /**
+     * @brief HumanoidPlanner, a constructor
+     * @param path
+     * @param id
+     */
+    HumanoidPlanner(const string &path, const int id);
 
     /**
      * @brief ~HumanoidPlanner, a destructor

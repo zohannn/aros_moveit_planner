@@ -1,5 +1,6 @@
 #include <moveit/kinematic_constraints/utils.h>
 #include <moveit/robot_model_loader/robot_model_loader.h>
+#include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 
 #include "../include/aros_moveit_planner/humanoid_planner.hpp"
 
@@ -9,7 +10,7 @@ namespace humanoid_planning {
 
 typedef boost::shared_ptr<HumanoidPlanner> HumanoidPlannerPtr;
 
-HumanoidPlanner::HumanoidPlanner(const string &arm)
+HumanoidPlanner::HumanoidPlanner()
 {
     pub = nh.advertise<moveit_msgs::PickupGoal>("pickup_message", 1, true);
     /* Load the robot model */
@@ -22,7 +23,7 @@ HumanoidPlanner::HumanoidPlanner(const string &arm)
         ROS_FATAL_STREAM("Unable to construct robot model!");
         throw runtime_error("Unable to construct robot model!");
     }
-    string name = arm + "_arm";
+    string name = "right_arm"; // default arm planning group
     if (!robot_model->hasJointModelGroup(name)) {
         std::string error = "Group '" + name + "' was not found.";
         ROS_FATAL_STREAM(error);
@@ -45,14 +46,16 @@ HumanoidPlanner::HumanoidPlanner(const string &arm)
     end_effector_link = joint_model_group->getLinkModelNames().back();
     ROS_INFO("End effector link: %s", end_effector_link.c_str());
     group_name_arm = name;
-    group_name_hand = arm + "_hand";
-    group_name_arm_hand = arm + "_arm_hand";
+    group_name_hand = "right_hand";// default hand planning group
+    group_name_arm_hand = "right_arm_hand"; // default arm_hand planning group
     planning_time = 5.0;
     planning_attempts = 5;
     goal_joint_tolerance = 1e-4;
     goal_position_tolerance = 1e-4; // 0.1 mm
     goal_orientation_tolerance = 1e-3; // ~0.1 deg
     planner_id = "";
+    scenario_path="";
+    scenario_id=0;
 
 
     ROS_INFO("Connecting to pickup action...");
@@ -114,18 +117,19 @@ HumanoidPlanner::HumanoidPlanner(const string &arm)
     start_state.copyJointGroupPositions(joint_model_group,group_variable_values);
 
     GetPlanningScene msg;
-    PlanningScene scene;
+    moveit_msgs::PlanningScene scene_msg;
+
     if(get_planning_scene_client.call(msg)){
         ROS_INFO("Got the planning scene");
-        scene = msg.response.scene;
-        JointState jstate = scene.robot_state.joint_state;
+        scene_msg = msg.response.scene;
+        JointState jstate = scene_msg.robot_state.joint_state;
         jstate.name = joint_model_group->getActiveJointModelNames();
         jstate.position = group_variable_values;
-        scene.robot_state.joint_state = jstate;
-        scene.is_diff=true;
+        scene_msg.robot_state.joint_state = jstate;
+        scene_msg.is_diff=true;
 
         ApplyPlanningScene msg_apply;
-        msg_apply.request.scene=scene;
+        msg_apply.request.scene=scene_msg;
         if(apply_planning_scene_client.call(msg_apply)){
             ROS_INFO("Robot start state applied");
         }else{
@@ -134,6 +138,139 @@ HumanoidPlanner::HumanoidPlanner(const string &arm)
     }else{
        ROS_WARN("Getting the planning scene failue");
     }
+
+
+}
+
+HumanoidPlanner::HumanoidPlanner(const string &path,const int id)
+{
+    pub = nh.advertise<moveit_msgs::PickupGoal>("pickup_message", 1, true);
+    /* Load the robot model */
+    robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
+    /* Get a shared pointer to the model */
+    // instance of our robot model loaded from URDF
+    ROS_INFO("Loading robot model from URDF");
+    robot_model = robot_model_loader.getModel();
+    if(!robot_model) {
+        ROS_FATAL_STREAM("Unable to construct robot model!");
+        throw runtime_error("Unable to construct robot model!");
+    }
+    string name = "right_arm"; // default arm planning group
+    if (!robot_model->hasJointModelGroup(name)) {
+        std::string error = "Group '" + name + "' was not found.";
+        ROS_FATAL_STREAM(error);
+        throw std::runtime_error(error);
+    }
+    joint_model_group = robot_model->getJointModelGroup(name);
+
+    // try to find the name of the end effector...
+    const vector<const robot_model::JointModelGroup *> eefs = robot_model->getEndEffectors();
+    for(size_t i = 0; i < eefs.size(); ++i) {
+        string eefName = eefs[i]->getName();
+        string parent_name = eefs[i]->getEndEffectorParentGroup().first;
+        if(parent_name == name) {
+            end_effector = eefName;
+            break;
+        }
+    }
+
+    // get the name of the end effector link in the arm...
+    end_effector_link = joint_model_group->getLinkModelNames().back();
+    ROS_INFO("End effector link: %s", end_effector_link.c_str());
+    group_name_arm = name;
+    group_name_hand = "right_hand";// default hand planning group
+    group_name_arm_hand = "right_arm_hand"; // default arm_hand planning group
+    planning_time = 5.0;
+    planning_attempts = 5;
+    goal_joint_tolerance = 1e-4;
+    goal_position_tolerance = 1e-4; // 0.1 mm
+    goal_orientation_tolerance = 1e-3; // ~0.1 deg
+    planner_id = "";
+    scenario_path=path;
+    scenario_id=id;
+
+
+    ROS_INFO("Connecting to pickup action...");
+    string pickup_topic = "pickup";
+    pick_action_client.reset(new actionlib::SimpleActionClient<moveit_msgs::PickupAction>(pickup_topic, true));
+
+    if (!pick_action_client->waitForServer(ros::Duration(5.0)))
+    {
+        ROS_ERROR("Pick up action client NOT available!");
+    }else{
+        ROS_INFO("Pick up action client available!");
+    }
+
+    ROS_INFO("Connecting to place action...");
+    string place_topic = "place";
+    place_action_client.reset(new actionlib::SimpleActionClient<moveit_msgs::PlaceAction>(place_topic, true));
+
+    if (!place_action_client->waitForServer(ros::Duration(5.0)))
+    {
+        ROS_ERROR("Place action client NOT available!");
+    }else{
+        ROS_INFO("Place action client available!");
+    }
+
+    ROS_INFO("Connecting to move_group action...");
+    string move_group_topic = "move_group";
+    move_action_client.reset(new actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction>(move_group_topic, true));
+
+    if(!move_action_client->waitForServer(ros::Duration(5.0)))
+    {
+        ROS_ERROR("Move action client NOT available!");
+    }else{
+        ROS_INFO("Move action client available!");
+    }
+
+
+    /*
+    ROS_INFO("Connecting to execute trajectory action...");
+    string execute_topic = "execute_traj";
+    execute_action_client.reset(new actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction>(execute_topic,true));
+
+    if(!execute_action_client->waitForServer(ros::Duration(5.0)))
+    {
+        ROS_ERROR("Execute action client NOT available!");
+    }else{
+        ROS_INFO("Execute action client available!");
+    }
+    */
+    execution_client = nh.serviceClient<ExecuteKnownTrajectory>("execute_kinematic_path");
+    attached_object_pub = nh.advertise<AttachedCollisionObject>("attached_collision_object", 1, false);
+    get_planning_scene_client = nh.serviceClient<GetPlanningScene>("get_planning_scene");
+    apply_planning_scene_client = nh.serviceClient<ApplyPlanningScene>("apply_planning_scene");
+
+    // set the default park state of the planning groups and load the selected scene
+    std::vector<double> group_variable_values;
+    robot_state::RobotState start_state(robot_model);
+    const robot_state::JointModelGroup *joint_model_group = start_state.getJointModelGroup("arms_hands");
+    start_state.setToDefaultValues(joint_model_group,"park_arms_hands");
+    start_state.copyJointGroupPositions(joint_model_group,group_variable_values);
+
+    moveit_msgs::PlanningScene scene_msg;
+    planning_scene::PlanningScene scene(robot_model);
+    std::ifstream f(scenario_path);
+    if (f.good() && !f.eof())
+    {
+        ROS_INFO("Loading the selected scene ...");
+        scene.loadGeometryFromStream(f);
+    }
+    scene.getPlanningSceneMsg(scene_msg);
+    JointState jstate = scene_msg.robot_state.joint_state;
+    jstate.name = joint_model_group->getActiveJointModelNames();
+    jstate.position = group_variable_values;
+    scene_msg.robot_state.joint_state = jstate;
+    scene_msg.is_diff=true;
+
+    ApplyPlanningScene msg_apply;
+    msg_apply.request.scene=scene_msg;
+    if(apply_planning_scene_client.call(msg_apply)){
+        ROS_INFO("scene applied");
+    }else{
+        ROS_WARN("Applying the planning scene failure");
+    }
+
 
 
 

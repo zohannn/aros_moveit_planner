@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8.3)
 set(PROJECT_NAME aros_moveit_planner)
 project(${PROJECT_NAME})
 
+SET(CMAKE_CXX_FLAGS "-g -Wall -std=c++11")
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -112,11 +114,20 @@ find_package(Boost REQUIRED COMPONENTS system)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-   INCLUDE_DIRS include
- # LIBRARIES humanoid_planner
+INCLUDE_DIRS include
+LIBRARIES
+    humanoid_planner
+    visualization_tools
+    path_trajectory_planner
+    trajectory_planner
+    kinematics_helper
 CATKIN_DEPENDS 
     moveit_core
     moveit_ros_planning_interface
+    moveit_ros_perception
+    actionlib
+    actionlib_msgs
+    geometric_shapes
     interactive_markers
 #  DEPENDS system_lib
 )
@@ -250,8 +261,8 @@ target_link_libraries(humanoid_planner ${catkin_LIBRARIES})
 ## Mark executables and/or libraries for installation
 install(TARGETS humanoid_planner visualization_tools path_trajectory_planner trajectory_planner kinematics_helper
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}/${PROJECT_NAME}/
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 ## Mark cpp header files for installation
@@ -335,7 +346,7 @@ if(DOC)
     if(NOT DOXYGEN_FOUND)
         message(WARNING "Doxygen not found, unable to generate documentation")
     else()
-        add_custom_target(doc COMMAND ${DOXYGEN_EXECUTABLE} "doxyconfig/doxyfile.ini"
+        add_custom_target(doc_${PROJECT_NAME} COMMAND ${DOXYGEN_EXECUTABLE} "doxyconfig/doxyfile.ini"
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             COMMENT "Building user's documentation into the doc directory ..."
         )

@@ -13,7 +13,7 @@
 #include <moveit_msgs/PickupAction.h>
 #include <moveit_msgs/PlaceAction.h>
 #include <moveit_msgs/MoveGroupAction.h>
-#include <moveit_msgs/ExecuteTrajectoryAction.h>
+//#include <moveit_msgs/ExecuteTrajectoryAction.h>
 #include <moveit_msgs/Grasp.h>
 #include <moveit_msgs/PlanningScene.h>
 #include <moveit_msgs/PlanningSceneComponents.h>
@@ -30,19 +30,6 @@ using namespace common;
 
 namespace humanoid_planning {
 
-/**
- * @brief The PlanningResult struct
- * This structure lists the result of planning
- */
-struct PlanningResult {
-        int type;/**< type of the trajectory */
-        int status;/**< status code of the planning */
-        string status_msg;/**< status message of the planning */
-        string object_id;/**< identity of the object involved on the movement */
-        RobotState start_state;/**< start state of the robot*/
-        vector<RobotTrajectory> trajectory_stages;/**< sequence of robot trajectories */
-        vector<string> trajectory_descriptions;/**< description of the trajectories */
-};
 typedef boost::shared_ptr<PlanningResult> PlanningResultPtr;
 
 //! The HumanoidPlanner class
@@ -68,6 +55,7 @@ private:
     string support_surface;/**< support surface for pick and place */
     string scenario_path;/**< path of the scenario file*/
     int scenario_id;/**< id of the current scenario */
+    string title_scene; /**< the title of the scenario */
 
     ros::NodeHandle nh;/**< ros node handle */
     ros::Publisher pub;/**< ros publisher for pickup messages */
@@ -120,17 +108,25 @@ public:
      */
     HumanoidPlanner();
 
+
     /**
      * @brief HumanoidPlanner, a constructor
+     * @param title
      * @param path
      * @param id
      */
-    HumanoidPlanner(const string &path, const int id);
+    HumanoidPlanner(const string &title, const string &path, const int id);
 
     /**
      * @brief ~HumanoidPlanner, a destructor
      */
     ~HumanoidPlanner();
+
+    /**
+     * @brief init
+     * Initialization of the constructor
+     */
+    void init();
 
     /**
      * @brief plan_pick

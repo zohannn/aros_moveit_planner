@@ -51,8 +51,6 @@ public:
 
         pub_attach_coll_obj = nh.advertise<AttachedCollisionObject>("attached_collision_object", 10);
 
-        //start_pose = getStartPose();
-        //goal_pose = getGoalPose();
 
         // Let everything load
         ros::Duration(5.0).sleep();

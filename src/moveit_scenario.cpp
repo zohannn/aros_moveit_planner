@@ -1,23 +1,23 @@
-#include "../include/aros_moveit_planner/scene.hpp"
+#include "../include/aros_moveit_planner/moveit_scenario.hpp"
 
 
-namespace humanoid_planning{
+namespace moveit_planning{
 
 
-Scene::Scene()
+Scenario::Scenario()
 {
     this->m_name = "";
     this->m_sceneID = -1;
 }
 
-Scene::Scene(string name, int id)
+Scenario::Scenario(string name, int id)
 {
     this->m_name = name;
     this->m_sceneID = id;
 }
 
 
-Scene::Scene(const Scene &scene)
+Scenario::Scenario(const Scenario &scene)
 {
 
     this->m_name=scene.m_name;
@@ -31,25 +31,25 @@ Scene::Scene(const Scene &scene)
 }
 
 
-Scene::~Scene()
+Scenario::~Scenario()
 {
 
 }
 
 
-void Scene::setName(string &name)
+void Scenario::setName(string &name)
 {
 
     this->m_name = name;
 }
 
-void Scene::setID(int id)
+void Scenario::setID(int id)
 {
 
     this->m_sceneID = id;
 }
 
-void Scene::setObject(int pos, objectPtr obj)
+void Scenario::setObject(int pos, objectPtr obj)
 {
 
     this->objs_list.at(pos) = objectPtr(new Object(*obj.get()));
@@ -57,20 +57,20 @@ void Scene::setObject(int pos, objectPtr obj)
 }
 
 
-string Scene::getName()
+string Scenario::getName()
 {
 
     return this->m_name;
 }
 
-int Scene::getID()
+int Scenario::getID()
 {
 
     return this->m_sceneID;
 }
 
 
-void Scene::getObjects(std::vector<objectPtr> &objs)
+void Scenario::getObjects(std::vector<objectPtr> &objs)
 {
 
     objs=this->objs_list;
@@ -78,13 +78,13 @@ void Scene::getObjects(std::vector<objectPtr> &objs)
 }
 
 
-void Scene::addObject(Object* ob)
+void Scenario::addObject(Object* ob)
 {
 
     this->objs_list.push_back(objectPtr(ob));
 }
 
-objectPtr Scene::getObject(int pos)
+objectPtr Scenario::getObject(int pos)
 {
 
     std::vector<objectPtr>::iterator ii = this->objs_list.begin();
@@ -94,7 +94,7 @@ objectPtr Scene::getObject(int pos)
 
 }
 
-objectPtr Scene::getObject(std::string obj_name)
+objectPtr Scenario::getObject(std::string obj_name)
 {
 
     objectPtr obj = NULL;
@@ -112,4 +112,4 @@ objectPtr Scene::getObject(std::string obj_name)
 
 
 
-}// namespace humanoid_planning
+}// namespace moveit_planning

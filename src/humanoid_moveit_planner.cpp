@@ -2,11 +2,11 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 
-#include "../include/aros_moveit_planner/humanoid_planner.hpp"
+#include "../include/aros_moveit_planner/humanoid_moveit_planner.hpp"
 
 using namespace std;
 
-namespace humanoid_planning {
+namespace moveit_planning {
 
 typedef boost::shared_ptr<HumanoidPlanner> HumanoidPlannerPtr;
 
@@ -14,8 +14,8 @@ HumanoidPlanner::HumanoidPlanner()
 {
 
     this->scenario_path="";
-    title_scene = "";
-    this->scenario_id=0;
+    planner_name = "";
+    //this->scenario_id=0;
 
     init();
 
@@ -54,12 +54,13 @@ HumanoidPlanner::HumanoidPlanner()
 
 
 
-HumanoidPlanner::HumanoidPlanner(const string &title, const string &path,const int id)
+HumanoidPlanner::HumanoidPlanner(const string &name, Scenario *rviz_scene, const string &path)
 {
 
     scenario_path=path;
-    scenario_id=id;
-    title_scene = title;
+    //scenario_id=id;
+    planner_name = name;
+    scene = scenarioPtr(rviz_scene);
 
 
     init();
@@ -669,4 +670,4 @@ bool HumanoidPlanner::detachObject(const string &object)
 
 
 
-} // namespace humanoid_planning
+} // namespace moveit_planning

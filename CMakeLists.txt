@@ -214,13 +214,23 @@ file(GLOB_RECURSE VIS_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
 add_library(visualization_tools ${VIS_CPP_SOURCES} ${VIS_HPP_SOURCES})
 target_link_libraries(visualization_tools ${catkin_LIBRARIES})
 
-## Humanoid planner library
+## Humanoid MoveIt! Planner Library
 file(GLOB_RECURSE HP_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
-     include/humanoid_planner.hpp
-     include/common.hpp
+     include/${PROJECT_NAME}/humanoid_moveit_planner.hpp
+     include/${PROJECT_NAME}/moveit_point.hpp
+     include/${PROJECT_NAME}/moveit_target.hpp
+     include/${PROJECT_NAME}/moveit_engagepoint.hpp
+     include/${PROJECT_NAME}/moveit_object.hpp
+     include/${PROJECT_NAME}/moveit_scenario.hpp
+     include/${PROJECT_NAME}/common.hpp
      )
 file(GLOB_RECURSE HP_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
-     src/humanoid_planner.cpp
+     src/humanoid_moveit_planner.cpp
+     src/moveit_point.cpp
+     src/moveit_target.cpp
+     src/moveit_engagepoint.cpp
+     src/moveit_object.cpp
+     src/moveit_scenario.cpp
      src/common.cpp
     )
 add_library(humanoid_planner ${HP_CPP_SOURCES} ${HP_HPP_SOURCES})
@@ -244,41 +254,6 @@ target_link_libraries(humanoid_planner ${catkin_LIBRARIES})
 ##   ${catkin_LIBRARIES}
 ##)
 
-#############
-## Install ##
-#############
-
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark executables and/or libraries for installation
-install(TARGETS humanoid_planner visualization_tools path_trajectory_planner trajectory_planner kinematics_helper
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-## Mark cpp header files for installation
-install(DIRECTORY include/${PROJECT_NAME}/
-   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-   FILES_MATCHING PATTERN "*.hpp"
-   PATTERN ".svn"  EXCLUDE
-   PATTERN ".git" EXCLUDE
- )
-
-## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
 
 ##############################################################################
 # Testing
@@ -352,3 +327,40 @@ if(DOC)
         )
     endif()
 endif()
+
+#############
+## Install ##
+#############
+
+# all install targets should use catkin DESTINATION variables
+# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
+
+## Mark executable scripts (Python etc.) for installation
+## in contrast to setup.py, you can choose the destination
+# install(PROGRAMS
+#   scripts/my_python_script
+#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
+
+## Mark executables and/or libraries for installation
+install(TARGETS humanoid_planner visualization_tools path_trajectory_planner trajectory_planner kinematics_helper
+#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+## Mark cpp header files for installation
+install(DIRECTORY include/${PROJECT_NAME}/
+   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+   FILES_MATCHING PATTERN "*.hpp"
+   PATTERN ".svn"  EXCLUDE
+   PATTERN ".git" EXCLUDE
+ )
+
+## Mark other files for installation (e.g. launch and bag files, etc.)
+# install(FILES
+#   # myfile1
+#   # myfile2
+#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+# )
+

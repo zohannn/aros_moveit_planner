@@ -1,6 +1,6 @@
-#include "../include/aros_moveit_planner/engagepoint.hpp"
+#include "../include/aros_moveit_planner/moveit_engagepoint.hpp"
 
-namespace humanoid_planning{
+namespace moveit_planning{
 
 EngagePoint::EngagePoint()
 {
@@ -27,4 +27,4 @@ EngagePoint::~EngagePoint()
 
 }
 
-}// namespace humanoid_planning
+}// namespace moveit_planning

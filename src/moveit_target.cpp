@@ -1,6 +1,6 @@
-#include "../include/aros_moveit_planner/target.hpp"
+#include "../include/aros_moveit_planner/moveit_target.hpp"
 
-namespace humanoid_planning{
+namespace moveit_planning{
 
 Target::Target()
 {
@@ -28,4 +28,4 @@ Target::~Target()
 }
 
 
-}// namespace humanoid_planning
+}// namespace moveit_planning

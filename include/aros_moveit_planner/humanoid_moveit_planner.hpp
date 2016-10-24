@@ -13,7 +13,6 @@
 #include <moveit_msgs/PickupAction.h>
 #include <moveit_msgs/PlaceAction.h>
 #include <moveit_msgs/MoveGroupAction.h>
-//#include <moveit_msgs/ExecuteTrajectoryAction.h>
 #include <moveit_msgs/Grasp.h>
 #include <moveit_msgs/PlanningScene.h>
 #include <moveit_msgs/PlanningSceneComponents.h>
@@ -21,15 +20,16 @@
 #include <moveit_msgs/ApplyPlanningScene.h>
 #include <sensor_msgs/JointState.h>
 
-#include "common.hpp"
+#include "moveit_scenario.hpp"
 
 using namespace std;
 using namespace moveit_msgs;
 using namespace sensor_msgs;
 using namespace common;
 
-namespace humanoid_planning {
+namespace moveit_planning {
 
+typedef boost::shared_ptr<Scenario> scenarioPtr;
 typedef boost::shared_ptr<PlanningResult> PlanningResultPtr;
 
 //! The HumanoidPlanner class
@@ -54,8 +54,9 @@ private:
     string planner_id;/**< identity of the planner */
     string support_surface;/**< support surface for pick and place */
     string scenario_path;/**< path of the scenario file*/
-    int scenario_id;/**< id of the current scenario */
-    string title_scene; /**< the title of the scenario */
+    scenarioPtr scene;/**< scenario where the planner works */
+    //int scenario_id;/**< id of the current scenario */
+    string planner_name; /**< the name of the planner */
 
     ros::NodeHandle nh;/**< ros node handle */
     ros::Publisher pub;/**< ros publisher for pickup messages */
@@ -112,10 +113,10 @@ public:
     /**
      * @brief HumanoidPlanner, a constructor
      * @param title
+     * @param rviz_scene
      * @param path
-     * @param id
      */
-    HumanoidPlanner(const string &title, const string &path, const int id);
+    HumanoidPlanner(const string &name, Scenario *rviz_scene, const string &path);
 
     /**
      * @brief ~HumanoidPlanner, a destructor
@@ -272,6 +273,6 @@ public:
 };
 
 
-} // namespace humanoid_planning
+} // namespace moveit_planning
 
 #endif // HUMANOID_PLANNER_HPP

@@ -46,23 +46,24 @@ namespace common {
 
 /** this struct defines the position in the Cartesian space*/
 typedef struct{
-    float Xpos; /**< position along the x axis in [mm] */
-    float Ypos; /**< position along the y axis in [mm] */
-    float Zpos; /**< position along the z axis in [mm] */
+    double  Xpos; /**< position along the x axis in [m] */
+    double  Ypos; /**< position along the y axis in [m] */
+    double  Zpos; /**< position along the z axis in [m] */
 } pos;
 
-/** this struct defines the orientation in Roll-Pitch-Yaw */
+/** this struct defines the orientation in Roll-Pitch-Yaw
+ around the axis of the world fixed frame */
 typedef struct{
-    float roll; /**< rotarion around the z axis in [rad] */
-    float pitch; /**< rotarion around the y axis in [rad] */
-    float yaw; /**< rotarion around the x axis in [rad] */
+    double roll; /**< rotarion around the z axis in [rad] */
+    double pitch; /**< rotarion around the y axis in [rad] */
+    double yaw; /**< rotarion around the x axis in [rad] */
 } orient;
 
 /** this struct defines the dimention of an object */
 typedef struct{
-    float Xsize; /**< size of the object along the x axis in [mm] */
-    float Ysize; /**< size of the object along the y axis in [mm] */
-    float Zsize; /**< size of the object along the z axis in [mm] */
+    float Xsize; /**< size of the object along the x axis in [m] */
+    float Ysize; /**< size of the object along the y axis in [m] */
+    float Zsize; /**< size of the object along the z axis in [m] */
 } dim;
 
 /** this struct defines the tolerances that have to be set before planning the trajectory*/
@@ -94,7 +95,7 @@ typedef struct{
 
     float tol_stop; /**< this tolerance defines the error between the norm of the final posture and the norm the current posture.
                     It has to be set to stop the movement when the final posture is reached. A tipical value is 0.1  */
-} Tols;
+} moveit_tols;
 
 /**
  * @brief The PlanningResult struct

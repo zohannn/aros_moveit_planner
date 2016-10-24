@@ -1,8 +1,8 @@
-#include "../include/aros_moveit_planner/object.hpp"
+#include "../include/aros_moveit_planner/moveit_object.hpp"
 #include <boost/format.hpp>
 
 
-namespace humanoid_planning{
+namespace moveit_planning{
 
 Object::Object()
 {
@@ -427,4 +427,4 @@ void Object::getRPY(Matrix4f Trans, std::vector<float>& rpy)
 
 }
 
-}// namespace humanoid_planning
+}// namespace moveit_planning

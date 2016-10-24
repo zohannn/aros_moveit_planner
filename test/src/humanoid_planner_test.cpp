@@ -10,7 +10,7 @@
 #include <geometric_shapes/solid_primitive_dims.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 
-#include "../../include/aros_moveit_planner/humanoid_planner.hpp"
+#include "../../include/aros_moveit_planner/humanoid_moveit_planner.hpp"
 
 int argcc;
 char** argvv;
@@ -18,7 +18,7 @@ char** argvv;
 using namespace std;
 using namespace moveit::planning_interface;
 using namespace moveit_msgs;
-using namespace humanoid_planning;
+using namespace moveit_planning;
 
 namespace aros_pick_place {
 

@@ -1,6 +1,6 @@
-#include "../include/aros_moveit_planner/point.hpp"
+#include "../include/aros_moveit_planner/moveit_point.hpp"
 
-namespace humanoid_planning{
+namespace moveit_planning{
 
 Point::Point()
 {
@@ -26,7 +26,7 @@ Point::~Point(){
 }
 
 
-void Point::setName(const std::string& name)
+void Point::setName(const string& name)
 {
 
     this->m_name = name;
@@ -65,20 +65,20 @@ orient Point::getOr() const
 }
 
 
-void Point::getXt(std::vector<float> &xt)
+void Point::getXt(vector<float> &xt)
 {
 
     this->getRotAxis(xt,0);
 }
 
 
-void Point::getYt(std::vector<float> &yt)
+void Point::getYt(vector<float> &yt)
 {
 
     this->getRotAxis(yt,1);
 }
 
-void Point::getZt(std::vector<float> &zt)
+void Point::getZt(vector<float> &zt)
 {
 
     this->getRotAxis(zt,2);
@@ -123,7 +123,7 @@ void Point::Trans_matrix(Matrix4f& Trans)
 }
 
 
-void Point::getRotAxis(std::vector<float>& xt, int id){
+void Point::getRotAxis(vector<float>& xt, int id){
 
     Matrix3f Rot;
     this->RPY_matrix(Rot);

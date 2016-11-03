@@ -3,7 +3,7 @@
 
 using namespace std;
 using namespace ros;
-using namespace common;
+using namespace moveit_common;
 
 namespace trajectory_planner_moveit {
 

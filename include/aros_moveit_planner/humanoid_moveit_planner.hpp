@@ -20,17 +20,17 @@
 #include <moveit_msgs/ApplyPlanningScene.h>
 #include <sensor_msgs/JointState.h>
 
-#include "moveit_scenario.hpp"
+#include "common.hpp"
 
 using namespace std;
 using namespace moveit_msgs;
 using namespace sensor_msgs;
-using namespace common;
+using namespace moveit_common;
 
 namespace moveit_planning {
 
-typedef boost::shared_ptr<Scenario> scenarioPtr;
-typedef boost::shared_ptr<PlanningResult> PlanningResultPtr;
+typedef boost::shared_ptr<PlanningResult> PlanningResultPtr; /**< pointer to a PlanningResult struct */
+
 
 //! The HumanoidPlanner class
 /**
@@ -53,10 +53,8 @@ private:
     double goal_orientation_tolerance;/**< tolerance on the goal end-effector orientation [rad]*/
     string planner_id;/**< identity of the planner */
     string support_surface;/**< support surface for pick and place */
-    string scenario_path;/**< path of the scenario file*/
-    scenarioPtr scene;/**< scenario where the planner works */
-    //int scenario_id;/**< id of the current scenario */
     string planner_name; /**< the name of the planner */
+    string scenario_path; /**< scenario of the path */
 
     ros::NodeHandle nh;/**< ros node handle */
     ros::Publisher pub;/**< ros publisher for pickup messages */
@@ -112,11 +110,16 @@ public:
 
     /**
      * @brief HumanoidPlanner, a constructor
-     * @param title
-     * @param rviz_scene
+     * @param name
      * @param path
      */
-    HumanoidPlanner(const string &name, Scenario *rviz_scene, const string &path);
+    HumanoidPlanner(const string &name,const string &path);
+
+    /**
+     * @brief HumanoidPlanner, a copy constructor
+     * @param hp
+     */
+    HumanoidPlanner(const HumanoidPlanner& hp);
 
     /**
      * @brief ~HumanoidPlanner, a destructor

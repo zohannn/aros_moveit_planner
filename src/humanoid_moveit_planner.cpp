@@ -13,9 +13,8 @@ typedef boost::shared_ptr<HumanoidPlanner> HumanoidPlannerPtr;
 HumanoidPlanner::HumanoidPlanner()
 {
 
-    this->scenario_path="";
+    scenario_path="";
     planner_name = "";
-    //this->scenario_id=0;
 
     init();
 
@@ -54,13 +53,12 @@ HumanoidPlanner::HumanoidPlanner()
 
 
 
-HumanoidPlanner::HumanoidPlanner(const string &name, Scenario *rviz_scene, const string &path)
+HumanoidPlanner::HumanoidPlanner(const string &name,const string &path)
 {
 
-    scenario_path=path;
-    //scenario_id=id;
+
+    scenario_path = path;
     planner_name = name;
-    scene = scenarioPtr(rviz_scene);
 
 
     init();
@@ -101,6 +99,97 @@ HumanoidPlanner::HumanoidPlanner(const string &name, Scenario *rviz_scene, const
 }
 
 
+HumanoidPlanner::HumanoidPlanner(const HumanoidPlanner &hp)
+{
+    this->group_name_arm = hp.group_name_arm;
+    this->group_name_hand = hp.group_name_hand;
+    this->group_name_arm_hand = hp.group_name_arm_hand;
+    this->end_effector = hp.end_effector;
+    this->end_effector_link = hp.end_effector_link;
+    this->planning_time = hp.planning_time;
+    this->planning_attempts = hp.planning_attempts;
+    this->goal_joint_tolerance = hp.goal_joint_tolerance;
+    this->goal_position_tolerance = hp.goal_position_tolerance;
+    this->goal_orientation_tolerance = hp.goal_orientation_tolerance;
+    this->planner_id = hp.planner_id;
+    this->support_surface = hp.support_surface;
+    this->planner_name = hp.planner_name;
+    this->scenario_path = hp.scenario_path;
+
+    this->nh = hp.nh;
+    this->pub = hp.pub;
+    this->execution_client = hp.execution_client;
+    this->attached_object_pub = hp.attached_object_pub;
+    this->get_planning_scene_client = hp.get_planning_scene_client;
+    this->apply_planning_scene_client = hp.apply_planning_scene_client;
+    this->robot_model = hp.robot_model;
+    this->joint_model_group = hp.joint_model_group;
+
+    init();
+    if (scenario_path.empty()){
+        // set the default park state of the planning groups
+        std::vector<double> group_variable_values;
+        robot_state::RobotState start_state(robot_model);
+        const robot_state::JointModelGroup *joint_model_group = start_state.getJointModelGroup("arms_hands");
+        start_state.setToDefaultValues(joint_model_group,"park_arms_hands");
+        start_state.copyJointGroupPositions(joint_model_group,group_variable_values);
+
+        GetPlanningScene msg;
+        moveit_msgs::PlanningScene scene_msg;
+
+        if(get_planning_scene_client.call(msg)){
+            ROS_INFO("Got the planning scene");
+            scene_msg = msg.response.scene;
+            JointState jstate = scene_msg.robot_state.joint_state;
+            jstate.name = joint_model_group->getActiveJointModelNames();
+            jstate.position = group_variable_values;
+            scene_msg.robot_state.joint_state = jstate;
+            scene_msg.is_diff=true;
+
+            ApplyPlanningScene msg_apply;
+            msg_apply.request.scene=scene_msg;
+            if(apply_planning_scene_client.call(msg_apply)){
+                ROS_INFO("Robot start state applied");
+            }else{
+                ROS_WARN("Applying the planning scene failure");
+            }
+        }else{
+           ROS_WARN("Getting the planning scene failue");
+        }
+    }else{
+        // set the default park state of the planning groups and load the selected scene
+        std::vector<double> group_variable_values;
+        robot_state::RobotState start_state(robot_model);
+        const robot_state::JointModelGroup *joint_model_group = start_state.getJointModelGroup("arms_hands");
+        start_state.setToDefaultValues(joint_model_group,"park_arms_hands");
+        start_state.copyJointGroupPositions(joint_model_group,group_variable_values);
+
+        moveit_msgs::PlanningScene scene_msg;
+        planning_scene::PlanningScene scene(robot_model);
+        std::ifstream f(scenario_path);
+        if (f.good() && !f.eof())
+        {
+            ROS_INFO("Loading the selected scene ...");
+            scene.loadGeometryFromStream(f);
+        }
+        scene.getPlanningSceneMsg(scene_msg);
+        JointState jstate = scene_msg.robot_state.joint_state;
+        jstate.name = joint_model_group->getActiveJointModelNames();
+        jstate.position = group_variable_values;
+        scene_msg.robot_state.joint_state = jstate;
+        scene_msg.is_diff=true;
+
+        ApplyPlanningScene msg_apply;
+        msg_apply.request.scene=scene_msg;
+        if(apply_planning_scene_client.call(msg_apply)){
+            ROS_INFO("scene applied");
+        }else{
+            ROS_WARN("Applying the planning scene failure");
+        }
+
+    }
+
+}
 
 HumanoidPlanner::~HumanoidPlanner()
 {

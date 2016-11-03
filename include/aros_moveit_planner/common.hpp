@@ -1,5 +1,5 @@
-#ifndef COMMON_HPP
-#define COMMON_HPP
+#ifndef MOVEIT_COMMON_HPP
+#define MOVEIT_COMMON_HPP
 
 
 #define ATTEMPTS 5
@@ -42,29 +42,8 @@ using namespace std;
 using namespace moveit_msgs;
 using namespace Eigen;
 
-namespace common {
+namespace moveit_common {
 
-/** this struct defines the position in the Cartesian space*/
-typedef struct{
-    double  Xpos; /**< position along the x axis in [m] */
-    double  Ypos; /**< position along the y axis in [m] */
-    double  Zpos; /**< position along the z axis in [m] */
-} pos;
-
-/** this struct defines the orientation in Roll-Pitch-Yaw
- around the axis of the world fixed frame */
-typedef struct{
-    double roll; /**< rotarion around the z axis in [rad] */
-    double pitch; /**< rotarion around the y axis in [rad] */
-    double yaw; /**< rotarion around the x axis in [rad] */
-} orient;
-
-/** this struct defines the dimention of an object */
-typedef struct{
-    float Xsize; /**< size of the object along the x axis in [m] */
-    float Ysize; /**< size of the object along the y axis in [m] */
-    float Zsize; /**< size of the object along the z axis in [m] */
-} dim;
 
 /** this struct defines the tolerances that have to be set before planning the trajectory*/
 typedef struct{
@@ -84,24 +63,24 @@ typedef struct{
     //std::vector<float> tols_table; // tolernaces for the table
     bool obstacle_avoidance; /**< true to avoid obstacle */
     bool target_avoidance; /**< true to avoid the target during the motion */
-    float eng_dist; /**< distance in [mm] of tolerance from the engage point along the axis  indicated by the eng_dir parameter.
-                        It defines the target for the sub-engage movement */
-    int eng_dir; /**< direction of tolerance. eng_dir=0 means no direction; eng_dir=1 means the x axis; eng_dir=2 means the y axis; eng_dir=3 means the z axis;*/
-    std::vector<float> eng_tols; /**< tolerances in reaching the engage point in [mm].
-                                    eng_tols(0) along the x axis; eng_tols(1) along the y axis; eng_tols(2) along the z axis;*/
-    float diseng_dist; /**< distance in [mm] of tolerance from the engage point along the axis  indicated by the diseng_dir parameter.
-                        It defines the target for the sub-disengage movement */
-    int diseng_dir; /**< direction of tolerance. diseng_dir=0 means no direction; diseng_dir=1 means the x axis; diseng_dir=2 means the y axis; diseng_dir=3 means the z axis;*/
+    //float eng_dist; /**< distance in [mm] of tolerance from the engage point along the axis  indicated by the eng_dir parameter.
+      //                  It defines the target for the sub-engage movement */
+    //int eng_dir; /**< direction of tolerance. eng_dir=0 means no direction; eng_dir=1 means the x axis; eng_dir=2 means the y axis; eng_dir=3 means the z axis;*/
+    //std::vector<float> eng_tols; /**< tolerances in reaching the engage point in [mm].
+      //                              eng_tols(0) along the x axis; eng_tols(1) along the y axis; eng_tols(2) along the z axis;*/
+    //float diseng_dist; /**< distance in [mm] of tolerance from the engage point along the axis  indicated by the diseng_dir parameter.
+      //                  It defines the target for the sub-disengage movement */
+    //int diseng_dir; /**< direction of tolerance. diseng_dir=0 means no direction; diseng_dir=1 means the x axis; diseng_dir=2 means the y axis; diseng_dir=3 means the z axis;*/
 
     float tol_stop; /**< this tolerance defines the error between the norm of the final posture and the norm the current posture.
                     It has to be set to stop the movement when the final posture is reached. A tipical value is 0.1  */
-} moveit_tols;
+} moveit_params;
 
 /**
  * @brief The PlanningResult struct
  * This structure lists the result of planning
  */
-struct PlanningResult {
+typedef struct{
         int type;/**< type of the trajectory */
         int status;/**< status code of the planning */
         string status_msg;/**< status message of the planning */
@@ -109,7 +88,7 @@ struct PlanningResult {
         RobotState start_state;/**< start state of the robot*/
         vector<RobotTrajectory> trajectory_stages;/**< sequence of robot trajectories */
         vector<string> trajectory_descriptions;/**< description of the trajectories */
-};
+}PlanningResult;
 
 
 /**
@@ -159,4 +138,4 @@ void printJointsValues(const moveit_msgs::RobotState &state, const string &arm);
 
 
 
-#endif // COMMON_HPP
+#endif // MOVEIT_COMMON_HPP

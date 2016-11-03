@@ -139,7 +139,7 @@ CATKIN_DEPENDS
 ## Tests
 # TEST=0. do not run the tests
 # TEST=1, run the tests
-set(TEST 1)
+set(TEST 0)
 
 ## Documentation
 # DOC=0. do not make the documentation
@@ -217,20 +217,10 @@ target_link_libraries(visualization_tools ${catkin_LIBRARIES})
 ## Humanoid MoveIt! Planner Library
 file(GLOB_RECURSE HP_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
      include/${PROJECT_NAME}/humanoid_moveit_planner.hpp
-     include/${PROJECT_NAME}/moveit_point.hpp
-     include/${PROJECT_NAME}/moveit_target.hpp
-     include/${PROJECT_NAME}/moveit_engagepoint.hpp
-     include/${PROJECT_NAME}/moveit_object.hpp
-     include/${PROJECT_NAME}/moveit_scenario.hpp
      include/${PROJECT_NAME}/common.hpp
      )
 file(GLOB_RECURSE HP_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
      src/humanoid_moveit_planner.cpp
-     src/moveit_point.cpp
-     src/moveit_target.cpp
-     src/moveit_engagepoint.cpp
-     src/moveit_object.cpp
-     src/moveit_scenario.cpp
      src/common.cpp
     )
 add_library(humanoid_planner ${HP_CPP_SOURCES} ${HP_HPP_SOURCES})

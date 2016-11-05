@@ -240,6 +240,7 @@ void HumanoidPlanner::init()
     goal_position_tolerance = 1e-4; // 0.1 mm
     goal_orientation_tolerance = 1e-3; // ~0.1 deg
     planner_id = "";
+    support_surface = SUPPORT_SURFACE;
 
 
 

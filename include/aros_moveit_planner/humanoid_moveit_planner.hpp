@@ -25,7 +25,6 @@
 using namespace std;
 using namespace moveit_msgs;
 using namespace sensor_msgs;
-using namespace moveit_common;
 
 namespace moveit_planning {
 
@@ -69,6 +68,27 @@ private:
     boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::PlaceAction> > place_action_client; /**< place action client */
     boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction> > move_action_client;/**< move group action client */
     //boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction> > execute_action_client;/**< execute action client */
+
+    /**
+     * @brief RPY_matrix
+     * @param rpy
+     * @param Rot
+     */
+    void RPY_matrix(std::vector<double>rpy, Matrix3d &Rot);
+
+    /**
+     * @brief openBarrettHand
+     * @param finalHand
+     * @param posture
+     */
+    void openBarrettHand(std::vector<double> finalHand, trajectory_msgs::JointTrajectory& posture);
+
+    /**
+     * @brief closedBarrettHand
+     * @param finalHand
+     * @param posture
+     */
+    void closedBarrettHand(std::vector<double> finalHand, trajectory_msgs::JointTrajectory& posture);
 
     /**
      * @brief execute
@@ -131,6 +151,13 @@ public:
      * Initialization of the constructor
      */
     void init();
+
+    /**
+     * @brief pick
+     * @param params
+     * @return
+     */
+    PlanningResultPtr pick(moveit_params& params);
 
     /**
      * @brief plan_pick

@@ -7,7 +7,7 @@
 #define CAN_LOOK false
 #define ALLOW_REPLAN false
 #define FRAME_ID "base_link"
-#define SUPPORT_SURFACE "table_surface_link"
+#define SUPPORT_SURFACE "Table"
 
 /** definitions for printing output */
 #define SEP ", "
@@ -42,37 +42,26 @@ using namespace std;
 using namespace moveit_msgs;
 using namespace Eigen;
 
-namespace moveit_common {
+namespace moveit_planning {
 
+const double AP = 6.0*static_cast<double>(M_PI)/180; /**< aperture of the fingers when approaching to pick */
 
 /** this struct defines the tolerances that have to be set before planning the trajectory*/
 typedef struct{
-    std::vector<float> tolsArm; /**< radius of the spheres along the arm in [mm] */
-    MatrixXf tolsHand; /**< radius of the spheres along the fingers in [mm] */
-    MatrixXf final_tolsObstacles; /**< tolerances of the final posture against the obstacles in [mm] */
-    std::vector< MatrixXf > singleArm_tolsTarget; /**< tolerances of the trajectory against the target in [mm] */
-    std::vector< MatrixXf > singleArm_tolsObstacles; /**< tolerances of the trajectory against the obstacles in [mm] */
-    float tolTarPos; /**< tolerance of the final position of the hand against the target in [mm] */
-    float tolTarOr; /**< tolerance of the final orientation of the hand against the target in [mm] */
-    //boundaryConditions bounds; /**< boundary condistions of the bounce problem */
-    int steps; /**< number of steps for the trajectory */
-    //float totalTime; // normalized time of the movement (0 < t <= 1)
-    std::vector<float> lambda_final; /**< weights for the final posture optimization */
-    std::vector<float> lambda_bounce; /**< weights for the bounce posture optimization */
-    std::vector<float> w_max; /**< maximum angular velocity for each joint [rad/s] */
-    //std::vector<float> tols_table; // tolernaces for the table
-    bool obstacle_avoidance; /**< true to avoid obstacle */
-    bool target_avoidance; /**< true to avoid the target during the motion */
-    //float eng_dist; /**< distance in [mm] of tolerance from the engage point along the axis  indicated by the eng_dir parameter.
-      //                  It defines the target for the sub-engage movement */
-    //int eng_dir; /**< direction of tolerance. eng_dir=0 means no direction; eng_dir=1 means the x axis; eng_dir=2 means the y axis; eng_dir=3 means the z axis;*/
-    //std::vector<float> eng_tols; /**< tolerances in reaching the engage point in [mm].
-      //                              eng_tols(0) along the x axis; eng_tols(1) along the y axis; eng_tols(2) along the z axis;*/
-    //float diseng_dist; /**< distance in [mm] of tolerance from the engage point along the axis  indicated by the diseng_dir parameter.
-      //                  It defines the target for the sub-disengage movement */
-    //int diseng_dir; /**< direction of tolerance. diseng_dir=0 means no direction; diseng_dir=1 means the x axis; diseng_dir=2 means the y axis; diseng_dir=3 means the z axis;*/
-
-    float tol_stop; /**< this tolerance defines the error between the norm of the final posture and the norm the current posture.
+    std::string config;/**< current configuration of the planner in the file ompl_planning.yaml*/
+    std::vector<double> pre_grasp_approach; /**< (0)= x component, (1)= y component, (2)= z component, (3)= distance form the target*/
+    std::vector<double> post_grasp_retreat; /**< (0)= x component, (1)= y component, (2)= z component, (3)= distance form the target*/
+    std::vector<double> pre_place_approach; /**< (0)= x component, (1)= y component, (2)= z component, (3)= distance form the target*/
+    std::vector<double> post_place_retreat; /**< (0)= x component, (1)= y component, (2)= z component, (3)= distance form the target*/
+    int arm_code; /**< the code of the arm: 0 = both arms, 1 = right arm, 2 = left arm */
+    int hand_code;/**< the code of the hand: 0 = human hand, 1 = barrett hand */
+    int griptype; /**< the type of the grip */
+    string mov_infoline; /**< description of the movement */
+    double dHO;/**< distanche hand-target*/
+    std::vector<double> finalHand;/**< final posture of the hand */
+    std::vector<double> target;/**< target to reach: tar(0)=x, tar(1)=y, tar(2)=z, tar(3)=roll, tar(4)=pitch, tar(6)=yaw,*/
+    std::string obj_name; /**< object involved in the movement */
+    double tol_stop; /**< this tolerance defines the error between the norm of the final posture and the norm the current posture.
                     It has to be set to stop the movement when the final posture is reached. A tipical value is 0.1  */
 } moveit_params;
 

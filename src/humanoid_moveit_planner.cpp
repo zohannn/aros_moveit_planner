@@ -217,6 +217,7 @@ void HumanoidPlanner::init()
     }
     joint_model_group = robot_model->getJointModelGroup(name);
 
+
     // try to find the name of the end effector...
     const vector<const robot_model::JointModelGroup *> eefs = robot_model->getEndEffectors();
     for(size_t i = 0; i < eefs.size(); ++i) {
@@ -236,10 +237,10 @@ void HumanoidPlanner::init()
     group_name_arm_hand = "right_arm_hand"; // default arm_hand planning group
     planning_time = 5.0;
     planning_attempts = 5;
-    goal_joint_tolerance = 1e-4;
-    goal_position_tolerance = 1e-4; // 0.1 mm
+    goal_joint_tolerance = 1e-4; // ~0.01 deg
+    goal_position_tolerance = 1e-3; // 1 mm
     goal_orientation_tolerance = 1e-3; // ~0.1 deg
-    planner_id = "";
+    planner_id = "RRTConnectkConfigDefault";
     support_surface = SUPPORT_SURFACE;
 
 
@@ -393,6 +394,138 @@ PlanningResultPtr HumanoidPlanner::plan_arm_hand_to_default(const std::string de
 }
 
 
+PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
+{
+  PlanningResultPtr result;
+  int arm_code = params.arm_code;
+  this->planner_id = params.config;
+
+  switch(arm_code){
+  case 0:// both arms
+      // TO DO
+      break;
+  case 1: // right arm
+      this->group_name_arm = "right_arm";
+      this->group_name_hand = "right_hand";
+      this->group_name_arm_hand = "right_arm_hand";
+      break;
+  case 2:// left arm
+      this->group_name_arm = "left_arm";
+      this->group_name_hand = "left_hand";
+      this->group_name_arm_hand = "left_arm_hand";
+      break;
+  }
+
+  // try to find the name of the end effector...
+  joint_model_group = robot_model->getJointModelGroup(this->group_name_arm);
+  const vector<const robot_model::JointModelGroup *> eefs = robot_model->getEndEffectors();
+  for(size_t i = 0; i < eefs.size(); ++i) {
+      string eefName = eefs[i]->getName();
+      string parent_name = eefs[i]->getEndEffectorParentGroup().first;
+      if(parent_name == this->group_name_arm) {
+          this->end_effector = eefName;
+          break;
+      }
+  }
+  // get the name of the end effector link in the arm...
+  this->end_effector_link = joint_model_group->getLinkModelNames().back();
+
+  // target
+  std::vector<double> tar = params.target;
+  Vector3d tar_pos(tar.at(0),tar.at(1),tar.at(2));
+  std::vector<double> rpy = {tar.at(3),tar.at(4),tar.at(5)};
+  Matrix3d Rot_tar; this->RPY_matrix(rpy,Rot_tar);
+  Vector3d z_tar = Rot_tar.col(2);
+
+  // approach
+  std::vector<double> approach = params.pre_grasp_approach;
+  Vector3d v_app(approach.at(0),approach.at(1),approach.at(2));
+  Vector3d app_vv =Rot_tar*v_app;
+  double dist_app = approach.at(3);
+
+  // retreat
+  std::vector<double> retreat = params.post_grasp_retreat;
+  Vector3d v_ret(retreat.at(0),retreat.at(1),retreat.at(2));
+  Vector3d ret_vv =Rot_tar*v_ret;
+  double dist_ret = retreat.at(3);
+
+  // Pick grasp
+  std::vector<Grasp> grasps; Grasp g; geometry_msgs::PoseStamped p;
+  p.header.frame_id = FRAME_ID;
+  // position of the pose
+  double dHO = params.dHO;
+  Vector3d pose_position = app_vv*dHO+tar_pos;
+  p.pose.position.x = pose_position(0);
+  p.pose.position.y = pose_position(1);
+  p.pose.position.z = pose_position(2);
+  // orientation of the pose
+  Vector3d z_hand = -app_vv; // z axis of the hand;
+  Vector3d x_hand; Vector3d y_hand;
+  int griptype = params.griptype;
+  switch(griptype){
+  case 211: case 111:// Side thumb left
+      x_hand = z_tar;
+      break;
+  case 112: case 212:// Side thumb right
+      // TO DO
+      break;
+  case 113: case 213:// Side thumb up
+      // TO DO
+      break;
+  case 114: case 214:// Side thumb down
+      // TO DO
+      break;
+  case 121: case 221:// Above
+      // TO DO
+      break;
+  case 122: case 222: // Below
+      // TO DO
+      break;
+  }
+  y_hand = z_hand.cross(x_hand);
+  Matrix3d Rot_hand = Matrix3d::Zero();
+  Rot_hand.col(0)=x_hand; Rot_hand.col(1)=y_hand; Rot_hand.col(2)=z_hand;
+  Quaterniond q(Rot_hand);
+  p.pose.orientation.x = q.x();
+  p.pose.orientation.y = q.y();
+  p.pose.orientation.z = q.z();
+  p.pose.orientation.w = q.w();
+  g.grasp_pose = p;
+  //approach
+  g.pre_grasp_approach.direction.header.frame_id = FRAME_ID;
+  g.pre_grasp_approach.direction.vector.x = app_vv(0);
+  g.pre_grasp_approach.direction.vector.y = app_vv(1);
+  g.pre_grasp_approach.direction.vector.z = app_vv(2);
+  g.pre_grasp_approach.min_distance = dist_app/2;
+  g.pre_grasp_approach.desired_distance = dist_app;
+  // retreat
+  g.post_grasp_retreat.direction.header.frame_id = FRAME_ID;
+  g.post_grasp_retreat.direction.vector.x = ret_vv(0);
+  g.post_grasp_retreat.direction.vector.y = ret_vv(1);
+  g.post_grasp_retreat.direction.vector.z = ret_vv(2);
+  g.post_grasp_retreat.min_distance = dist_ret/2;
+  g.post_grasp_retreat.desired_distance = dist_ret;
+
+  int hand_code = params.hand_code;
+  switch(hand_code){
+  case 0:// human hand
+      // TO DO
+      break;
+  case 1:// barrett hand
+      this->openBarrettHand(params.finalHand,g.pre_grasp_posture);
+      this->closedBarrettHand(params.finalHand,g.grasp_posture);
+      break;
+
+  }
+
+  grasps.push_back(g);
+
+  result = this->plan_pick(params.obj_name,grasps);
+
+
+  return result;
+}
+
 
 PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vector<Grasp> &grasps)
 {
@@ -418,13 +551,19 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vect
     }
 
     moveit_msgs::PickupGoal goal;
+    std::vector<std::string> allowed_touch_objects; allowed_touch_objects.push_back(object_id);
 
     goal.target_name = object_id;
+    goal.allowed_touch_objects = allowed_touch_objects;
     goal.group_name = group_name_arm;
     goal.end_effector = end_effector;
     goal.allowed_planning_time = planning_time;
     goal.support_surface_name = support_surface;
     goal.planner_id = planner_id;
+    //goal.planner_id = "RRTConnectkConfigDefault";
+    //goal.planner_id = "RRTstarkConfigDefault";
+    //goal.planner_id = "PRMkConfigDefault";
+    //goal.planner_id = "PRMstarkConfigDefault";
 
     if (!support_surface.empty()) {
         goal.allow_gripper_support_collision = true;
@@ -756,6 +895,89 @@ bool HumanoidPlanner::detachObject(const string &object)
     attached_object_pub.publish(aco);
 
     return true;
+}
+
+void HumanoidPlanner::RPY_matrix(std::vector<double> rpy, Matrix3d &Rot)
+{
+    Rot = Matrix3d::Zero();
+
+    if(!rpy.empty()){
+        double roll = rpy.at(0); // around z
+        double pitch = rpy.at(1); // around y
+        double yaw = rpy.at(2); // around x
+
+        // Rot = Rot_z * Rot_y * Rot_x
+
+        Rot(0,0) = cos(roll)*cos(pitch);  Rot(0,1) = cos(roll)*sin(pitch)*sin(yaw)-sin(roll)*cos(yaw); Rot(0,2) = sin(roll)*sin(yaw)+cos(roll)*sin(pitch)*cos(yaw);
+        Rot(1,0) = sin(roll)*cos(pitch);  Rot(1,1) = cos(roll)*cos(yaw)+sin(roll)*sin(pitch)*sin(yaw); Rot(1,2) = sin(roll)*sin(pitch)*cos(yaw)-cos(roll)*sin(yaw);
+        Rot(2,0) = -sin(pitch);           Rot(2,1) = cos(pitch)*sin(yaw);                              Rot(2,2) = cos(pitch)*cos(yaw);
+
+    }
+}
+
+void HumanoidPlanner::openBarrettHand(std::vector<double> finalHand, trajectory_msgs::JointTrajectory &posture)
+{
+
+    const robot_model::JointModelGroup * joint_model_group = robot_model->getJointModelGroup(this->group_name_hand);
+    std::vector<std::string> names = joint_model_group->getJointModelNames();
+    //posture.joint_names.resize(names.size());
+    posture.points.resize(1);
+    //posture.points[0].positions.resize(names.size());
+    for(size_t i =0; i < names.size(); ++i){
+        //std::cout << names.at(i).c_str() << endl;
+        //posture.joint_names[i] = names.at(i);
+        if(i==0 || i==4){
+            posture.joint_names.push_back(names.at(i));
+            posture.points[0].positions.push_back(finalHand.at(0));
+        }else if(i==1){
+            posture.joint_names.push_back(names.at(i));
+            if((finalHand.at(1)-AP) < 0){
+                posture.points[0].positions.push_back(0.0);
+            }else{
+                posture.points[0].positions.push_back(finalHand.at(1)-AP);
+            }
+        }else if(i==5){
+            posture.joint_names.push_back(names.at(i));
+            if((finalHand.at(2)-AP) < 0){
+                posture.points[0].positions.push_back(0.0);
+            }else{
+                posture.points[0].positions.push_back(finalHand.at(2)-AP);
+            }
+        }else if(i==8){
+            posture.joint_names.push_back(names.at(i));
+            if((finalHand.at(3)-AP) < 0){
+                posture.points[0].positions.push_back(0.0);
+            }else{
+                posture.points[0].positions.push_back(finalHand.at(3)-AP);
+            }
+        }
+    }
+}
+
+void HumanoidPlanner::closedBarrettHand(std::vector<double> finalHand, trajectory_msgs::JointTrajectory& posture)
+{
+    const robot_model::JointModelGroup * joint_model_group = robot_model->getJointModelGroup(this->group_name_hand);
+    std::vector<std::string> names = joint_model_group->getJointModelNames();
+    //posture.joint_names.resize(names.size());
+    posture.points.resize(1);
+    //posture.points[0].positions.resize(names.size());
+    for(size_t i =0; i < names.size(); ++i){
+        //std::cout << names.at(i).c_str() << endl;
+        //posture.joint_names[i] = names.at(i);
+        if(i==0 || i==4){
+            posture.joint_names.push_back(names.at(i));
+            posture.points[0].positions.push_back(finalHand.at(0));
+        }else if(i==1){
+            posture.joint_names.push_back(names.at(i));
+            posture.points[0].positions.push_back(finalHand.at(1));
+        }else if(i==5){
+            posture.joint_names.push_back(names.at(i));
+            posture.points[0].positions.push_back(finalHand.at(2));
+        }else if(i==8){
+            posture.joint_names.push_back(names.at(i));
+            posture.points[0].positions.push_back(finalHand.at(3));
+        }
+    }
 }
 
 

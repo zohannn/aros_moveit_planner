@@ -123,7 +123,7 @@ void getArmValuesFromState(const string &arm, const moveit_msgs::RobotState &sta
  */
 void printJointsValues(const moveit_msgs::RobotState &state, const string &arm);
 
-}
+} // namespace moveit_planning
 
 
 

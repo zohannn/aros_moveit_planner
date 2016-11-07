@@ -19,6 +19,9 @@
 #include <moveit_msgs/GetPlanningScene.h>
 #include <moveit_msgs/ApplyPlanningScene.h>
 #include <sensor_msgs/JointState.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include <geometric_shapes/mesh_operations.h>
+#include <geometric_shapes/shape_operations.h>
 
 #include "common.hpp"
 
@@ -54,9 +57,12 @@ private:
     string support_surface;/**< support surface for pick and place */
     string planner_name; /**< the name of the planner */
     string scenario_path; /**< scenario of the path */
+    boost::shared_ptr<moveit::planning_interface::PlanningSceneInterface> planning_scene_interface_ptr;/**< scene interface */
+
 
     ros::NodeHandle nh;/**< ros node handle */
     ros::Publisher pub;/**< ros publisher for pickup messages */
+    ros::Publisher pub_co; /**< ros publisher for collision objects */
     ros::ServiceClient execution_client;/**< ros service client for execution of the trajectory */
     ros::Publisher attached_object_pub;/**< ros publisher of the attached collision object */
     ros::ServiceClient get_planning_scene_client;/**< ros service client for getting the planning scene */
@@ -124,8 +130,9 @@ public:
 
     /**
      * @brief HumanoidPlanner, a constructor
+     * @param name
      */
-    HumanoidPlanner();
+    HumanoidPlanner(const string &name);
 
 
     /**
@@ -151,6 +158,13 @@ public:
      * Initialization of the constructor
      */
     void init();
+
+    /**
+     * @brief addTable
+     * @param name
+     * @param pose
+     */
+    void addTable(const string &name,std::vector<double>& pose);
 
     /**
      * @brief pick

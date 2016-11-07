@@ -5,7 +5,7 @@
 
 
 using namespace trajectory_planner_moveit;
-using namespace common;
+using namespace moveit_planning;
 using namespace std;
 
 int argcc;
@@ -18,13 +18,13 @@ TEST(TestSuite_kin_helper, Test_kin_goal1)
 
     geometry_msgs::Pose goal1;
 
-    goal1.position.x = -0.26;
-    goal1.position.y = 0.50;
-    goal1.position.z = 1.25;
-    goal1.orientation.x = 0.755872;
-    goal1.orientation.y = -0.612878;
-    goal1.orientation.z = -0.0464803;
-    goal1.orientation.w = 0.22556;
+    goal1.position.x = -0.43;
+    goal1.position.y = 0.66;
+    goal1.position.z = 1.08;
+    goal1.orientation.x = 0.7;
+    goal1.orientation.y = -0.7;
+    goal1.orientation.z = 0;
+    goal1.orientation.w = 0;
 
     KinematicsHelper helper(nh);
 

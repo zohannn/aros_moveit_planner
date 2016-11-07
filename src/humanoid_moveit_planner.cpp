@@ -10,11 +10,11 @@ namespace moveit_planning {
 
 typedef boost::shared_ptr<HumanoidPlanner> HumanoidPlannerPtr;
 
-HumanoidPlanner::HumanoidPlanner()
+HumanoidPlanner::HumanoidPlanner(const string &name)
 {
 
     scenario_path="";
-    planner_name = "";
+    planner_name = name;
 
     init();
 
@@ -115,9 +115,11 @@ HumanoidPlanner::HumanoidPlanner(const HumanoidPlanner &hp)
     this->support_surface = hp.support_surface;
     this->planner_name = hp.planner_name;
     this->scenario_path = hp.scenario_path;
+    this->planning_scene_interface_ptr = hp.planning_scene_interface_ptr;
 
     this->nh = hp.nh;
     this->pub = hp.pub;
+    this->pub_co = hp.pub_co;
     this->execution_client = hp.execution_client;
     this->attached_object_pub = hp.attached_object_pub;
     this->get_planning_scene_client = hp.get_planning_scene_client;
@@ -198,7 +200,10 @@ HumanoidPlanner::~HumanoidPlanner()
 
 void HumanoidPlanner::init()
 {
+    planning_scene_interface_ptr.reset(new moveit::planning_interface::PlanningSceneInterface());
+
     pub = nh.advertise<moveit_msgs::PickupGoal>("pickup_message", 1, true);
+    pub_co = nh.advertise<moveit_msgs::CollisionObject>("collision_object", 10);
     /* Load the robot model */
     robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
     /* Get a shared pointer to the model */
@@ -285,6 +290,54 @@ void HumanoidPlanner::init()
 
 
 
+}
+
+void HumanoidPlanner::addTable(const string &name, std::vector<double> &pose)
+{
+    moveit_msgs::CollisionObject co;
+    co.header.stamp = ros::Time::now();
+    co.header.frame_id = FRAME_ID;
+
+    //vector<string> object_ids;
+    vector<moveit_msgs::CollisionObject> collision_objects;
+
+
+
+    // remove the object
+    co.id = name;
+    co.operation = moveit_msgs::CollisionObject::REMOVE;
+    //object_ids.push_back(co.id);
+    //planning_scene_interface_ptr->removeCollisionObjects(object_ids);
+    pub_co.publish(co);
+
+    // add the object
+    co.operation = moveit_msgs::CollisionObject::ADD;
+    shapes::Mesh* table_shape = shapes::createMeshFromResource("package://models/meshes/table/table.dae");
+    shapes::ShapeMsg table_mesh_msg;
+    shapes::constructMsgFromShape(table_shape,table_mesh_msg);
+    shape_msgs::Mesh table_mesh = boost::get<shape_msgs::Mesh>(table_mesh_msg);
+
+    std::vector<double> rpy = {pose.at(3),pose.at(4),pose.at(5)};
+    Matrix3d Rot; this->RPY_matrix(rpy,Rot); Quaterniond q(Rot);
+
+    co.meshes.resize(1);
+    co.meshes[0] = table_mesh;
+    co.mesh_poses.resize(1);
+    co.mesh_poses[0].position.x = pose.at(0); // [m]
+    co.mesh_poses[0].position.y = pose.at(1); // [m]
+    co.mesh_poses[0].position.z = pose.at(2); // [m]
+    co.mesh_poses[0].orientation.w= q.w();
+    co.mesh_poses[0].orientation.x= q.x();
+    co.mesh_poses[0].orientation.y= q.y();
+    co.mesh_poses[0].orientation.z= q.z();
+
+    collision_objects.push_back(co);
+    ROS_INFO("Add the object into the world");
+    //planning_scene_interface_ptr->addCollisionObjects(collision_objects);
+    pub_co.publish(co);
+
+    /* Sleep so we have time to see the object in RViz */
+    ros::WallDuration(5.0).sleep();
 }
 
 void HumanoidPlanner::setPlanningGroupName(const string &name)
@@ -551,10 +604,23 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vect
     }
 
     moveit_msgs::PickupGoal goal;
-    std::vector<std::string> allowed_touch_objects; allowed_touch_objects.push_back(object_id);
+    std::vector<std::string> allowed_touch_objects; allowed_touch_objects.push_back("all");
+    std::vector<std::string> attached_object_touch_links;
+    //attached_object_touch_links.push_back("right_finger1_base_link");
+    //attached_object_touch_links.push_back("right_finger2_base_link");
+    //attached_object_touch_links.push_back("right_finger1_1_link");
+    //attached_object_touch_links.push_back("right_finger2_1_link");
+    //attached_object_touch_links.push_back("right_finger3_1_link");
+    attached_object_touch_links.push_back("right_finger1_2_link");
+    //attached_object_touch_links.push_back("right_finger2_2_link");
+    //attached_object_touch_links.push_back("right_finger3_2_link");
+    attached_object_touch_links.push_back("right_finger1_tip_link");
+    attached_object_touch_links.push_back("right_finger2_tip_link");
+    attached_object_touch_links.push_back("right_finger3_tip_link");
 
     goal.target_name = object_id;
     goal.allowed_touch_objects = allowed_touch_objects;
+    goal.attached_object_touch_links = attached_object_touch_links;
     goal.group_name = group_name_arm;
     goal.end_effector = end_effector;
     goal.allowed_planning_time = planning_time;
@@ -934,21 +1000,24 @@ void HumanoidPlanner::openBarrettHand(std::vector<double> finalHand, trajectory_
             if((finalHand.at(1)-AP) < 0){
                 posture.points[0].positions.push_back(0.0);
             }else{
-                posture.points[0].positions.push_back(finalHand.at(1)-AP);
+                //posture.points[0].positions.push_back(finalHand.at(1)-AP);
+                posture.points[0].positions.push_back(0.0);
             }
         }else if(i==5){
             posture.joint_names.push_back(names.at(i));
             if((finalHand.at(2)-AP) < 0){
                 posture.points[0].positions.push_back(0.0);
             }else{
-                posture.points[0].positions.push_back(finalHand.at(2)-AP);
+                //posture.points[0].positions.push_back(finalHand.at(2)-AP);
+                posture.points[0].positions.push_back(0.0);
             }
         }else if(i==8){
             posture.joint_names.push_back(names.at(i));
             if((finalHand.at(3)-AP) < 0){
                 posture.points[0].positions.push_back(0.0);
             }else{
-                posture.points[0].positions.push_back(finalHand.at(3)-AP);
+                //posture.points[0].positions.push_back(finalHand.at(3)-AP);
+                posture.points[0].positions.push_back(0.0);
             }
         }
     }

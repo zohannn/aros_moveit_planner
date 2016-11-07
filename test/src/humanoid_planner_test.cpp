@@ -41,7 +41,7 @@ public:
 
         planning_scene_interface.reset(new PlanningSceneInterface());
         // Create PlanningHelper for one of the planning groups
-        h_planner.reset(new HumanoidPlanner());
+        h_planner.reset(new HumanoidPlanner("title"));
 
         h_planner->setAllowedPlanningTime(5);
         h_planner->setPlanningAttempts(5);
@@ -306,7 +306,7 @@ public:
       co.primitives[0].dimensions[shape_msgs::SolidPrimitive::BOX_X] = 0.3;
       co.primitives[0].dimensions[shape_msgs::SolidPrimitive::BOX_Y] = 0.05;
       co.primitives[0].dimensions[shape_msgs::SolidPrimitive::BOX_Z] = 1.0;
-      co.primitive_poses.resize(1);
+      co.primitive_poses.resize(1);      
       co.primitive_poses[0].position.x = -0.64;
       co.primitive_poses[0].position.y = 0.82;
       co.primitive_poses[0].position.z = 1.43;

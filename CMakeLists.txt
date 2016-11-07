@@ -139,7 +139,7 @@ CATKIN_DEPENDS
 ## Tests
 # TEST=0. do not run the tests
 # TEST=1, run the tests
-set(TEST 0)
+set(TEST 1)
 
 ## Documentation
 # DOC=0. do not make the documentation
@@ -263,7 +263,7 @@ if(TEST)
     add_executable(${PROJECT_KIN_TEST_NAME} ${KIN_TEST_CPP_FILES})
     target_link_libraries(${PROJECT_KIN_TEST_NAME} ${catkin_LIBRARIES} ${TEST_LIBRARIES} kinematics_helper)
     add_test (NAME Test_Kinematics_Helper COMMAND ${PROJECT_KIN_TEST_NAME})
-
+if(FALSE)
     ## Trajectory planner tests
     set(PROJECT_TRAJ_TEST_NAME ${PROJECT_NAME}_traj_planner_test)
     file(GLOB TRAJ_TEST_CPP_FILES ${PROJECT_SOURCE_DIR}/test/src/traj_planner_test.cpp)
@@ -288,7 +288,7 @@ if(TEST)
     target_link_libraries(${PROJECT_VIS_TEST_NAME} ${catkin_LIBRARIES} ${TEST_LIBRARIES}
         trajectory_planner visualization_tools)
     add_test (NAME Test_Visualization_tools COMMAND ${PROJECT_VIS_TEST_NAME})
-
+endif()
     ## Humanoid planner tests
     set(PROJECT_HP_TEST_NAME ${PROJECT_NAME}_humanoid_planner_test)
     file(GLOB HP_TEST_CPP_FILES ${PROJECT_SOURCE_DIR}/test/src/humanoid_planner_test.cpp)
@@ -297,6 +297,7 @@ if(TEST)
     target_link_libraries(${PROJECT_HP_TEST_NAME} ${catkin_LIBRARIES} ${TEST_LIBRARIES}
         humanoid_planner)
     add_test (NAME Test_Humanoid_planner COMMAND ${PROJECT_HP_TEST_NAME})
+
 
 endif()
 

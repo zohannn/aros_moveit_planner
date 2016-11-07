@@ -1,6 +1,6 @@
 #include "../include/aros_moveit_planner/common.hpp"
 
-namespace moveit_common {
+namespace moveit_planning {
 
 
 double getJointPositionFromState(const string &joint, const moveit_msgs::RobotState &state)

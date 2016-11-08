@@ -58,7 +58,6 @@ private:
     string planner_name; /**< the name of the planner */
     string scenario_path; /**< scenario of the path */
 
-
     ros::NodeHandle nh;/**< ros node handle */
     ros::Publisher pub;/**< ros publisher for pickup messages */
     ros::ServiceClient execution_client;/**< ros service client for execution of the trajectory */
@@ -79,6 +78,7 @@ private:
      * @param Rot
      */
     void RPY_matrix(std::vector<double>rpy, Matrix3d &Rot);
+
 
     /**
      * @brief openBarrettHand

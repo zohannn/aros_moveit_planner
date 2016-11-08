@@ -523,10 +523,13 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
       break;
 
   }
+  std::string obj_name = params.obj_name;
+  //std::vector<std::string> allowed_touch_objects; allowed_touch_objects.push_back(obj_name);
+  //g.allowed_touch_objects = allowed_touch_objects;
 
   grasps.push_back(g);
 
-  result = this->plan_pick(params.obj_name,grasps);
+  result = this->plan_pick(obj_name,grasps);
 
 
   return result;
@@ -556,109 +559,14 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vect
         return result;
     }
 
-    moveit_msgs::PlanningScene currentScene;
-
-
-    moveit_msgs::GetPlanningScene scene_srv;
-    scene_srv.request.components.components = scene_srv.request.components.ALLOWED_COLLISION_MATRIX;
-    moveit_msgs::AllowedCollisionMatrix currentACM;
-
-    if(!get_planning_scene_client.call(scene_srv))
-    {
-        ROS_WARN("Failed to call service /get_planning_scene");
-    }
-    else
-    {
-        ROS_INFO_STREAM("Initial scene!");
-        currentScene = scene_srv.response.scene;
-        currentACM = currentScene.allowed_collision_matrix;
-
-        ROS_ERROR_STREAM("size of acm_entry_names before " << currentACM.entry_names.size());
-        ROS_ERROR_STREAM("size of acm_entry_values before " << currentACM.entry_values.size());
-        ROS_ERROR_STREAM("size of acm_entry_values[0].entries before " << currentACM.entry_values[0].enabled.size());
-
-
-        currentACM.entry_names.push_back(object_id);
-        moveit_msgs::AllowedCollisionEntry entry;
-        entry.enabled.resize(currentACM.entry_names.size());
-
-        for(int i = 0; i < entry.enabled.size(); i++)
-            entry.enabled[i] = true;
-
-        //add new row to allowed collsion matrix
-        currentACM.entry_values.push_back(entry);
-
-        for(int i = 0; i < currentACM.entry_values.size(); i++)
-        {
-            //extend the last column of the matrix
-            currentACM.entry_values[i].enabled.push_back(true);
-        }
-
-        moveit_msgs::PlanningScene scene_msg;
-        scene_msg.allowed_collision_matrix=currentACM;
-        scene_msg.is_diff=true;
-
-        ApplyPlanningScene msg_apply;
-        msg_apply.request.scene=scene_msg;
-        if(apply_planning_scene_client.call(msg_apply)){
-            ROS_INFO("scene applied");
-        }else{
-            ROS_WARN("Applying the planning scene failure");
-        }
-
-     }
-
-      if(!get_planning_scene_client.call(scene_srv))
-     {
-       ROS_WARN("Failed to call service /get_planning_scene");
-     }
-     else
-     {
-         ROS_INFO_STREAM("Modified scene!");
-         currentScene = scene_srv.response.scene;
-         moveit_msgs::AllowedCollisionMatrix currentACM = currentScene.allowed_collision_matrix;
-
-         ROS_ERROR_STREAM("size of acm_entry_names after " << currentACM.entry_names.size());
-         ROS_ERROR_STREAM("size of acm_entry_values after " << currentACM.entry_values.size());
-         ROS_ERROR_STREAM("size of acm_entry_values[0].entries after " << currentACM.entry_values[0].enabled.size());
-     }
-
-
-
-    for(size_t i=0; i< currentACM.entry_names.size();++i){
-        ROS_ERROR_STREAM("size of acm_entry_names " << i << ":" << currentACM.entry_names.at(i));
-    }
-
 
     moveit_msgs::PickupGoal goal;
-    /*
-    std::vector<std::string> allowed_touch_objects; allowed_touch_objects.push_back("all");
-    std::vector<std::string> attached_object_touch_links;
-    attached_object_touch_links.push_back("right_finger1_base_link");
-    attached_object_touch_links.push_back("right_finger2_base_link");
-    attached_object_touch_links.push_back("right_finger1_1_link");
-    attached_object_touch_links.push_back("right_finger2_1_link");
-    attached_object_touch_links.push_back("right_finger3_1_link");
-    attached_object_touch_links.push_back("right_finger1_2_link");
-    attached_object_touch_links.push_back("right_finger2_2_link");
-    attached_object_touch_links.push_back("right_finger3_2_link");
-    attached_object_touch_links.push_back("right_finger1_tip_link");
-    attached_object_touch_links.push_back("right_finger2_tip_link");
-    attached_object_touch_links.push_back("right_finger3_tip_link");
-    */
-
     goal.target_name = object_id;
-    //goal.allowed_touch_objects = allowed_touch_objects;
-    //goal.attached_object_touch_links = attached_object_touch_links;
     goal.group_name = group_name_arm;
     goal.end_effector = end_effector;
     goal.allowed_planning_time = planning_time;
     goal.support_surface_name = support_surface;
     goal.planner_id = planner_id;
-    //goal.planner_id = "RRTConnectkConfigDefault";
-    //goal.planner_id = "RRTstarkConfigDefault";
-    //goal.planner_id = "PRMkConfigDefault";
-    //goal.planner_id = "PRMstarkConfigDefault";
 
     if (!support_surface.empty()) {
         goal.allow_gripper_support_collision = true;
@@ -673,6 +581,7 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vect
     goal.planning_options.plan_only = true;
     goal.planning_options.planning_scene_diff.is_diff = true;
     goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
+
 
     ROS_INFO("Publishing pickup message");
     pub.publish(goal);
@@ -702,10 +611,13 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vect
         stringstream ss;
         ss << "Planning failed with status code '" << res->error_code.val << "'";
         result->status_msg = ss.str();
+
     }
+
 
     return result;
 }
+
 
 PlanningResultPtr HumanoidPlanner::plan_place(const string &object_id, const vector<PlaceLocation> &locations)
 {

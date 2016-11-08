@@ -115,11 +115,9 @@ HumanoidPlanner::HumanoidPlanner(const HumanoidPlanner &hp)
     this->support_surface = hp.support_surface;
     this->planner_name = hp.planner_name;
     this->scenario_path = hp.scenario_path;
-    this->planning_scene_interface_ptr = hp.planning_scene_interface_ptr;
 
     this->nh = hp.nh;
     this->pub = hp.pub;
-    this->pub_co = hp.pub_co;
     this->execution_client = hp.execution_client;
     this->attached_object_pub = hp.attached_object_pub;
     this->get_planning_scene_client = hp.get_planning_scene_client;
@@ -200,10 +198,8 @@ HumanoidPlanner::~HumanoidPlanner()
 
 void HumanoidPlanner::init()
 {
-    planning_scene_interface_ptr.reset(new moveit::planning_interface::PlanningSceneInterface());
 
     pub = nh.advertise<moveit_msgs::PickupGoal>("pickup_message", 1, true);
-    pub_co = nh.advertise<moveit_msgs::CollisionObject>("collision_object", 10);
     /* Load the robot model */
     robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
     /* Get a shared pointer to the model */
@@ -292,53 +288,7 @@ void HumanoidPlanner::init()
 
 }
 
-void HumanoidPlanner::addTable(const string &name, std::vector<double> &pose)
-{
-    moveit_msgs::CollisionObject co;
-    co.header.stamp = ros::Time::now();
-    co.header.frame_id = FRAME_ID;
 
-    //vector<string> object_ids;
-    vector<moveit_msgs::CollisionObject> collision_objects;
-
-
-
-    // remove the object
-    co.id = name;
-    co.operation = moveit_msgs::CollisionObject::REMOVE;
-    //object_ids.push_back(co.id);
-    //planning_scene_interface_ptr->removeCollisionObjects(object_ids);
-    pub_co.publish(co);
-
-    // add the object
-    co.operation = moveit_msgs::CollisionObject::ADD;
-    shapes::Mesh* table_shape = shapes::createMeshFromResource("package://models/meshes/table/table.dae");
-    shapes::ShapeMsg table_mesh_msg;
-    shapes::constructMsgFromShape(table_shape,table_mesh_msg);
-    shape_msgs::Mesh table_mesh = boost::get<shape_msgs::Mesh>(table_mesh_msg);
-
-    std::vector<double> rpy = {pose.at(3),pose.at(4),pose.at(5)};
-    Matrix3d Rot; this->RPY_matrix(rpy,Rot); Quaterniond q(Rot);
-
-    co.meshes.resize(1);
-    co.meshes[0] = table_mesh;
-    co.mesh_poses.resize(1);
-    co.mesh_poses[0].position.x = pose.at(0); // [m]
-    co.mesh_poses[0].position.y = pose.at(1); // [m]
-    co.mesh_poses[0].position.z = pose.at(2); // [m]
-    co.mesh_poses[0].orientation.w= q.w();
-    co.mesh_poses[0].orientation.x= q.x();
-    co.mesh_poses[0].orientation.y= q.y();
-    co.mesh_poses[0].orientation.z= q.z();
-
-    collision_objects.push_back(co);
-    ROS_INFO("Add the object into the world");
-    //planning_scene_interface_ptr->addCollisionObjects(collision_objects);
-    pub_co.publish(co);
-
-    /* Sleep so we have time to see the object in RViz */
-    ros::WallDuration(5.0).sleep();
-}
 
 void HumanoidPlanner::setPlanningGroupName(const string &name)
 {
@@ -545,10 +495,13 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
   p.pose.orientation.w = q.w();
   g.grasp_pose = p;
   //approach
+  // the components of the vector of approach renge from -1 and +1 included.
+  // The direction of approahc must always be the opposite of the typed values.
+  // this guarantees that the point of contact is calculated correctly and that the hand goes towards it.
   g.pre_grasp_approach.direction.header.frame_id = FRAME_ID;
-  g.pre_grasp_approach.direction.vector.x = app_vv(0);
-  g.pre_grasp_approach.direction.vector.y = app_vv(1);
-  g.pre_grasp_approach.direction.vector.z = app_vv(2);
+  g.pre_grasp_approach.direction.vector.x = -app_vv(0);
+  g.pre_grasp_approach.direction.vector.y = -app_vv(1);
+  g.pre_grasp_approach.direction.vector.z = -app_vv(2);
   g.pre_grasp_approach.min_distance = dist_app/2;
   g.pre_grasp_approach.desired_distance = dist_app;
   // retreat
@@ -603,24 +556,100 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vect
         return result;
     }
 
+    moveit_msgs::PlanningScene currentScene;
+
+
+    moveit_msgs::GetPlanningScene scene_srv;
+    scene_srv.request.components.components = scene_srv.request.components.ALLOWED_COLLISION_MATRIX;
+    moveit_msgs::AllowedCollisionMatrix currentACM;
+
+    if(!get_planning_scene_client.call(scene_srv))
+    {
+        ROS_WARN("Failed to call service /get_planning_scene");
+    }
+    else
+    {
+        ROS_INFO_STREAM("Initial scene!");
+        currentScene = scene_srv.response.scene;
+        currentACM = currentScene.allowed_collision_matrix;
+
+        ROS_ERROR_STREAM("size of acm_entry_names before " << currentACM.entry_names.size());
+        ROS_ERROR_STREAM("size of acm_entry_values before " << currentACM.entry_values.size());
+        ROS_ERROR_STREAM("size of acm_entry_values[0].entries before " << currentACM.entry_values[0].enabled.size());
+
+
+        currentACM.entry_names.push_back(object_id);
+        moveit_msgs::AllowedCollisionEntry entry;
+        entry.enabled.resize(currentACM.entry_names.size());
+
+        for(int i = 0; i < entry.enabled.size(); i++)
+            entry.enabled[i] = true;
+
+        //add new row to allowed collsion matrix
+        currentACM.entry_values.push_back(entry);
+
+        for(int i = 0; i < currentACM.entry_values.size(); i++)
+        {
+            //extend the last column of the matrix
+            currentACM.entry_values[i].enabled.push_back(true);
+        }
+
+        moveit_msgs::PlanningScene scene_msg;
+        scene_msg.allowed_collision_matrix=currentACM;
+        scene_msg.is_diff=true;
+
+        ApplyPlanningScene msg_apply;
+        msg_apply.request.scene=scene_msg;
+        if(apply_planning_scene_client.call(msg_apply)){
+            ROS_INFO("scene applied");
+        }else{
+            ROS_WARN("Applying the planning scene failure");
+        }
+
+     }
+
+      if(!get_planning_scene_client.call(scene_srv))
+     {
+       ROS_WARN("Failed to call service /get_planning_scene");
+     }
+     else
+     {
+         ROS_INFO_STREAM("Modified scene!");
+         currentScene = scene_srv.response.scene;
+         moveit_msgs::AllowedCollisionMatrix currentACM = currentScene.allowed_collision_matrix;
+
+         ROS_ERROR_STREAM("size of acm_entry_names after " << currentACM.entry_names.size());
+         ROS_ERROR_STREAM("size of acm_entry_values after " << currentACM.entry_values.size());
+         ROS_ERROR_STREAM("size of acm_entry_values[0].entries after " << currentACM.entry_values[0].enabled.size());
+     }
+
+
+
+    for(size_t i=0; i< currentACM.entry_names.size();++i){
+        ROS_ERROR_STREAM("size of acm_entry_names " << i << ":" << currentACM.entry_names.at(i));
+    }
+
+
     moveit_msgs::PickupGoal goal;
+    /*
     std::vector<std::string> allowed_touch_objects; allowed_touch_objects.push_back("all");
     std::vector<std::string> attached_object_touch_links;
-    //attached_object_touch_links.push_back("right_finger1_base_link");
-    //attached_object_touch_links.push_back("right_finger2_base_link");
-    //attached_object_touch_links.push_back("right_finger1_1_link");
-    //attached_object_touch_links.push_back("right_finger2_1_link");
-    //attached_object_touch_links.push_back("right_finger3_1_link");
+    attached_object_touch_links.push_back("right_finger1_base_link");
+    attached_object_touch_links.push_back("right_finger2_base_link");
+    attached_object_touch_links.push_back("right_finger1_1_link");
+    attached_object_touch_links.push_back("right_finger2_1_link");
+    attached_object_touch_links.push_back("right_finger3_1_link");
     attached_object_touch_links.push_back("right_finger1_2_link");
-    //attached_object_touch_links.push_back("right_finger2_2_link");
-    //attached_object_touch_links.push_back("right_finger3_2_link");
+    attached_object_touch_links.push_back("right_finger2_2_link");
+    attached_object_touch_links.push_back("right_finger3_2_link");
     attached_object_touch_links.push_back("right_finger1_tip_link");
     attached_object_touch_links.push_back("right_finger2_tip_link");
     attached_object_touch_links.push_back("right_finger3_tip_link");
+    */
 
     goal.target_name = object_id;
-    goal.allowed_touch_objects = allowed_touch_objects;
-    goal.attached_object_touch_links = attached_object_touch_links;
+    //goal.allowed_touch_objects = allowed_touch_objects;
+    //goal.attached_object_touch_links = attached_object_touch_links;
     goal.group_name = group_name_arm;
     goal.end_effector = end_effector;
     goal.allowed_planning_time = planning_time;
@@ -1000,24 +1029,21 @@ void HumanoidPlanner::openBarrettHand(std::vector<double> finalHand, trajectory_
             if((finalHand.at(1)-AP) < 0){
                 posture.points[0].positions.push_back(0.0);
             }else{
-                //posture.points[0].positions.push_back(finalHand.at(1)-AP);
-                posture.points[0].positions.push_back(0.0);
+                posture.points[0].positions.push_back(finalHand.at(1)-AP);
             }
         }else if(i==5){
             posture.joint_names.push_back(names.at(i));
             if((finalHand.at(2)-AP) < 0){
                 posture.points[0].positions.push_back(0.0);
             }else{
-                //posture.points[0].positions.push_back(finalHand.at(2)-AP);
-                posture.points[0].positions.push_back(0.0);
+                posture.points[0].positions.push_back(finalHand.at(2)-AP);
             }
         }else if(i==8){
             posture.joint_names.push_back(names.at(i));
             if((finalHand.at(3)-AP) < 0){
                 posture.points[0].positions.push_back(0.0);
             }else{
-                //posture.points[0].positions.push_back(finalHand.at(3)-AP);
-                posture.points[0].positions.push_back(0.0);
+                posture.points[0].positions.push_back(finalHand.at(3)-AP);
             }
         }
     }

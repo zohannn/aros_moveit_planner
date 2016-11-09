@@ -1019,17 +1019,17 @@ void HumanoidPlanner::openBarrettHand(std::vector<double> finalHand, trajectory_
     for(size_t i =0; i < names.size(); ++i){
         //std::cout << names.at(i).c_str() << endl;
         //posture.joint_names[i] = names.at(i);
-        if(i==0 || i==4){
+        if(i==2 || i==5){
             posture.joint_names.push_back(names.at(i));
             posture.points[0].positions.push_back(finalHand.at(0));
-        }else if(i==1){
+        }else if(i==3){
             posture.joint_names.push_back(names.at(i));
             if((finalHand.at(1)-AP) < 0){
                 posture.points[0].positions.push_back(0.0);
             }else{
                 posture.points[0].positions.push_back(finalHand.at(1)-AP);
             }
-        }else if(i==5){
+        }else if(i==6){
             posture.joint_names.push_back(names.at(i));
             if((finalHand.at(2)-AP) < 0){
                 posture.points[0].positions.push_back(0.0);
@@ -1057,13 +1057,13 @@ void HumanoidPlanner::closedBarrettHand(std::vector<double> finalHand, trajector
     for(size_t i =0; i < names.size(); ++i){
         //std::cout << names.at(i).c_str() << endl;
         //posture.joint_names[i] = names.at(i);
-        if(i==0 || i==4){
+        if(i==2 || i==5){
             posture.joint_names.push_back(names.at(i));
             posture.points[0].positions.push_back(finalHand.at(0));
-        }else if(i==1){
+        }else if(i==3){
             posture.joint_names.push_back(names.at(i));
             posture.points[0].positions.push_back(finalHand.at(1));
-        }else if(i==5){
+        }else if(i==6){
             posture.joint_names.push_back(names.at(i));
             posture.points[0].positions.push_back(finalHand.at(2));
         }else if(i==8){

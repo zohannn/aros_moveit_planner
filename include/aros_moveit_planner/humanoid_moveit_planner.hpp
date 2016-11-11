@@ -8,6 +8,7 @@
 
 #include <actionlib/client/simple_action_client.h>
 #include <moveit/move_group_interface/move_group.h>
+#include <moveit/robot_state/robot_state.h>
 
 #include <moveit_msgs/ExecuteKnownTrajectory.h>
 #include <moveit_msgs/PickupAction.h>
@@ -304,6 +305,7 @@ public:
      * @return
      */
     string getSupportSurfaceName();
+
 
 
 };

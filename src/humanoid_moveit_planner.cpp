@@ -559,91 +559,6 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vect
         return result;
     }
 
-/*
-    moveit_msgs::PlanningScene currentScene;
-    moveit_msgs::PlanningScene newSceneDiff;
-
-
-    moveit_msgs::GetPlanningScene scene_srv;
-    scene_srv.request.components.components = scene_srv.request.components.ALLOWED_COLLISION_MATRIX;
-    moveit_msgs::AllowedCollisionMatrix currentACM;
-
-    if(!get_planning_scene_client.call(scene_srv))
-    {
-        ROS_WARN("Failed to call service /get_planning_scene");
-    }
-    else
-    {
-        ROS_INFO_STREAM("Initial scene!");
-        currentScene = scene_srv.response.scene;
-        currentACM = currentScene.allowed_collision_matrix;
-
-        ROS_ERROR_STREAM("size of acm_entry_names before " << currentACM.entry_names.size());
-        ROS_ERROR_STREAM("size of acm_entry_values before " << currentACM.entry_values.size());
-        ROS_ERROR_STREAM("size of acm_entry_values[0].entries before " << currentACM.entry_values[0].enabled.size());
-
-
-        moveit_msgs::AllowedCollisionMatrix currentACM_init = currentACM;
-        currentACM.entry_names.push_back(object_id);
-        moveit_msgs::AllowedCollisionEntry entry;
-        entry.enabled.resize(currentACM.entry_names.size());
-
-        int index;
-        for(size_t i=0; i < currentACM.entry_names.size(); ++i){
-            //ROS_ERROR_STREAM("acm_entry_names before " << i << " "<< currentACM.entry_names.at(i));
-            std::string name = currentACM.entry_names.at(i);
-            if(strcmp(name.c_str(),"right_hand_barrett_link")==0){
-                index = i;
-            }
-        }
-
-        for(size_t i = 0; i < entry.enabled.size(); i++){
-            if(i==index){
-                entry.enabled[i] = true;
-            }else{entry.enabled[i] = false;}
-        }
-
-        //add new row to allowed collsion matrix
-        currentACM.entry_values.push_back(entry);
-        for(int i = 0; i < currentACM.entry_values.size(); i++)
-        {
-            //extend the last column of the matrix
-            if(i==index){
-                currentACM.entry_values[i].enabled.push_back(true);
-            }else{
-               currentACM.entry_values[i].enabled.push_back(false);
-            }
-        }
-
-        newSceneDiff.is_diff = true;
-        newSceneDiff.allowed_collision_matrix = currentACM;
-        ApplyPlanningScene msg_apply;
-        msg_apply.request.scene=newSceneDiff;
-        apply_planning_scene_client.call(msg_apply);
-
-       if(!get_planning_scene_client.call(scene_srv))
-       {
-         ROS_WARN("Failed to call service /get_planning_scene");
-       }
-       else
-       {
-           ROS_INFO_STREAM("Modified scene!");
-           currentScene = scene_srv.response.scene;
-           moveit_msgs::AllowedCollisionMatrix currentACM = currentScene.allowed_collision_matrix;
-
-           ROS_ERROR_STREAM("size of acm_entry_names after " << currentACM.entry_names.size());
-           ROS_ERROR_STREAM("size of acm_entry_values after " << currentACM.entry_values.size());
-           ROS_ERROR_STREAM("size of acm_entry_values[0].entries after " << currentACM.entry_values[0].enabled.size());
-       }
-    }
-*/
-
-    //std::vector<std::string> attached_object_touch_links;
-    //const robot_model::JointModelGroup * joint_model_group = robot_model->getJointModelGroup(this->end_effector);
-    //std::vector<std::string> names = joint_model_group->getJointModelNames();
-    //attached_object_touch_links = names; attached_object_touch_links.push_back("right_hand_barrett_link");
-    //std::vector<std::string> allowed_touch_objects; allowed_touch_objects.push_back(object_id);
-
     moveit_msgs::PickupGoal goal;
     goal.target_name = object_id;
     goal.group_name = group_name_arm;
@@ -654,9 +569,9 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vect
     goal.support_surface_name = support_surface;
     goal.planner_id = planner_id;
 
-    if (!support_surface.empty()) {
-        goal.allow_gripper_support_collision = true;
-    }
+    //if (!support_surface.empty()) {
+      //  goal.allow_gripper_support_collision = true;
+    //}
 
     ROS_INFO("Pickup goal constructed for group '%s' and end effector '%s'", goal.group_name.c_str(), goal.end_effector.c_str());
 

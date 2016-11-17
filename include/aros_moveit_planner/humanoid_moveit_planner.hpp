@@ -55,7 +55,6 @@ private:
     double goal_position_tolerance;/**< tolerance on the goal end-effector position [m] */
     double goal_orientation_tolerance;/**< tolerance on the goal end-effector orientation [rad]*/
     string planner_id;/**< identity of the planner */
-    string support_surface;/**< support surface for pick and place */
     string planner_name; /**< the name of the planner */
     string scenario_path; /**< scenario of the path */
 
@@ -68,10 +67,10 @@ private:
     robot_model::RobotModelConstPtr robot_model;/**< model of the loaded robot*/
     const robot_model::JointModelGroup *joint_model_group;/**< joint group of the planning group */
 
-    boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::PickupAction> > pick_action_client; /**< pickup action client */
-    boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::PlaceAction> > place_action_client; /**< place action client */
-    boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction> > move_action_client;/**< move group action client */
-    //boost::scoped_ptr<actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction> > execute_action_client;/**< execute action client */
+    boost::shared_ptr<actionlib::SimpleActionClient<moveit_msgs::PickupAction> > pick_action_client; /**< pickup action client */
+    boost::shared_ptr<actionlib::SimpleActionClient<moveit_msgs::PlaceAction> > place_action_client; /**< place action client */
+    boost::shared_ptr<actionlib::SimpleActionClient<moveit_msgs::MoveGroupAction> > move_action_client;/**< move group action client */
+    //boost::shared_ptr<actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction> > execute_action_client;/**< execute action client */
 
     /**
      * @brief RPY_matrix
@@ -80,6 +79,12 @@ private:
      */
     void RPY_matrix(std::vector<double>rpy, Matrix3d &Rot);
 
+    /**
+     * @brief setJoints_barrettHand
+     * @param finalHand
+     * @param goal_posture_ext
+     */
+    void setJoints_barrettHand(std::vector<double> finalHand, std::vector<double>& goal_posture_ext);
 
     /**
      * @brief openBarrettHand
@@ -171,18 +176,27 @@ public:
      * Plan a pickup movement with the list of given grasps
      * @param object_id
      * @param grasps
+     * @param support_surf
      * @return
      */
-    PlanningResultPtr plan_pick(const string &object_id, const vector<Grasp> &grasps);
+    PlanningResultPtr plan_pick(const string &object_id, const string &support_surf, const vector<Grasp> &grasps);
+
+    /**
+     * @brief place
+     * @param params
+     * @return
+     */
+    PlanningResultPtr place(moveit_params& params);
 
     /**
      * @brief plan_place
      * Plan the place movement with the list of given locations
      * @param object_id
      * @param locations
+     * @param support_surf
      * @return
      */
-    PlanningResultPtr plan_place(const string &object_id, const vector<PlaceLocation> &locations);
+    PlanningResultPtr plan_place(const string &object_id, const string &support_surf, const vector<PlaceLocation> &locations);
 
     /**
      * @brief plan
@@ -193,13 +207,21 @@ public:
     PlanningResultPtr plan(const geometry_msgs::Pose &pose_goal);
 
     /**
-     * @brief plan
+     * @brief move
+     * @param params
+     * @param goal_posture
+     * @return
+     */
+    PlanningResultPtr move(moveit_params& params, const std::vector<double> goal_posture);
+
+    /**
+     * @brief plan_move
      * Plan the movement to reach the given posture
      * @param posture
      * @param group
      * @return
      */
-    PlanningResultPtr plan(const std::string group, const std::vector<double> posture);
+    PlanningResultPtr plan_move(const std::string group, const std::vector<double> posture);
 
     /**
      * @brief plan_arm_to_default
@@ -291,21 +313,6 @@ public:
      * @return
      */
     int getPlanningAttempts();
-
-    /**
-     * @brief setSupportSurfaceName
-     * It sets the name of the support surface
-     * @param name
-     */
-    void setSupportSurfaceName(const string name);
-
-    /**
-     * @brief getSupportSurfaceName
-     * It gets the name of the support surface
-     * @return
-     */
-    string getSupportSurfaceName();
-
 
 
 };

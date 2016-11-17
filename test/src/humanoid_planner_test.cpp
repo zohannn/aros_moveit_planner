@@ -46,7 +46,7 @@ public:
         h_planner->setAllowedPlanningTime(5);
         h_planner->setPlanningAttempts(5);
         h_planner->setPlanningGroupName("right_arm");
-        h_planner->setSupportSurfaceName("table");
+        //h_planner->setSupportSurfaceName("table");
         h_planner->setPlannerId(planner_id);
 
         pub_attach_coll_obj = nh.advertise<AttachedCollisionObject>("attached_collision_object", 10);
@@ -141,7 +141,7 @@ public:
 
       grasps.push_back(g);
 
-        PlanningResultPtr plan = h_planner->plan_pick(name, grasps);
+        PlanningResultPtr plan = h_planner->plan_pick(name,"table",grasps);
         if(plan->status == HumanoidPlanner::SUCCESS) {
             ROS_INFO("Planning pickup phase sucessfully completed!");
         } else {
@@ -202,7 +202,7 @@ public:
 
         loc.push_back(g);
 
-        PlanningResultPtr plan = h_planner->plan_place(name, loc);
+        PlanningResultPtr plan = h_planner->plan_place(name,"table",loc);
 
         if(plan->status == HumanoidPlanner::SUCCESS) {
             ROS_INFO("Planning placement phase sucessfully completed!");

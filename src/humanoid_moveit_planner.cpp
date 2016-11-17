@@ -112,7 +112,6 @@ HumanoidPlanner::HumanoidPlanner(const HumanoidPlanner &hp)
     this->goal_position_tolerance = hp.goal_position_tolerance;
     this->goal_orientation_tolerance = hp.goal_orientation_tolerance;
     this->planner_id = hp.planner_id;
-    this->support_surface = hp.support_surface;
     this->planner_name = hp.planner_name;
     this->scenario_path = hp.scenario_path;
 
@@ -125,69 +124,9 @@ HumanoidPlanner::HumanoidPlanner(const HumanoidPlanner &hp)
     this->robot_model = hp.robot_model;
     this->joint_model_group = hp.joint_model_group;
 
-    init();
-    if (scenario_path.empty()){
-        // set the default park state of the planning groups
-        std::vector<double> group_variable_values;
-        robot_state::RobotState start_state(robot_model);
-        const robot_state::JointModelGroup *joint_model_group = start_state.getJointModelGroup("arms_hands");
-        start_state.setToDefaultValues(joint_model_group,"park_arms_hands");
-        start_state.copyJointGroupPositions(joint_model_group,group_variable_values);
-
-        GetPlanningScene msg;
-        moveit_msgs::PlanningScene scene_msg;
-
-        if(get_planning_scene_client.call(msg)){
-            ROS_INFO("Got the planning scene");
-            scene_msg = msg.response.scene;
-            JointState jstate = scene_msg.robot_state.joint_state;
-            jstate.name = joint_model_group->getActiveJointModelNames();
-            jstate.position = group_variable_values;
-            scene_msg.robot_state.joint_state = jstate;
-            scene_msg.is_diff=true;
-
-            ApplyPlanningScene msg_apply;
-            msg_apply.request.scene=scene_msg;
-            if(apply_planning_scene_client.call(msg_apply)){
-                ROS_INFO("Robot start state applied");
-            }else{
-                ROS_WARN("Applying the planning scene failure");
-            }
-        }else{
-           ROS_WARN("Getting the planning scene failue");
-        }
-    }else{
-        // set the default park state of the planning groups and load the selected scene
-        std::vector<double> group_variable_values;
-        robot_state::RobotState start_state(robot_model);
-        const robot_state::JointModelGroup *joint_model_group = start_state.getJointModelGroup("arms_hands");
-        start_state.setToDefaultValues(joint_model_group,"park_arms_hands");
-        start_state.copyJointGroupPositions(joint_model_group,group_variable_values);
-
-        moveit_msgs::PlanningScene scene_msg;
-        planning_scene::PlanningScene scene(robot_model);
-        std::ifstream f(scenario_path);
-        if (f.good() && !f.eof())
-        {
-            ROS_INFO("Loading the selected scene ...");
-            scene.loadGeometryFromStream(f);
-        }
-        scene.getPlanningSceneMsg(scene_msg);
-        JointState jstate = scene_msg.robot_state.joint_state;
-        jstate.name = joint_model_group->getActiveJointModelNames();
-        jstate.position = group_variable_values;
-        scene_msg.robot_state.joint_state = jstate;
-        scene_msg.is_diff=true;
-
-        ApplyPlanningScene msg_apply;
-        msg_apply.request.scene=scene_msg;
-        if(apply_planning_scene_client.call(msg_apply)){
-            ROS_INFO("scene applied");
-        }else{
-            ROS_WARN("Applying the planning scene failure");
-        }
-
-    }
+    this->pick_action_client = hp.pick_action_client;
+    this->place_action_client = hp.place_action_client;
+    this->move_action_client = hp.move_action_client;
 
 }
 
@@ -242,7 +181,6 @@ void HumanoidPlanner::init()
     goal_position_tolerance = 1e-3; // 1 mm
     goal_orientation_tolerance = 1e-3; // ~0.1 deg
     planner_id = "RRTConnectkConfigDefault";
-    support_surface = SUPPORT_SURFACE;
 
 
 
@@ -335,15 +273,7 @@ int HumanoidPlanner::getPlanningAttempts()
     return planning_attempts;
 }
 
-void HumanoidPlanner::setSupportSurfaceName(const string name)
-{
-    support_surface = name;
-}
 
-string HumanoidPlanner::getSupportSurfaceName()
-{
-    return support_surface;
-}
 
 PlanningResultPtr HumanoidPlanner::plan_arm_to_default(const std::string def_posture)
 {
@@ -357,7 +287,7 @@ PlanningResultPtr HumanoidPlanner::plan_arm_to_default(const std::string def_pos
 
     robot_state.copyJointGroupPositions(joint_model_group,group_variable_values);
 
-    PlanningResultPtr result = plan(group_name_arm,group_variable_values);
+    PlanningResultPtr result = plan_move(group_name_arm,group_variable_values);
 
     return result;
 }
@@ -374,7 +304,7 @@ PlanningResultPtr HumanoidPlanner::plan_hand_to_default(const std::string def_po
 
     robot_state.copyJointGroupPositions(joint_model_group,group_variable_values);
 
-    PlanningResultPtr result = plan(group_name_hand,group_variable_values);
+    PlanningResultPtr result = plan_move(group_name_hand,group_variable_values);
 
     return result;
 }
@@ -391,7 +321,7 @@ PlanningResultPtr HumanoidPlanner::plan_arm_hand_to_default(const std::string de
 
     robot_state.copyJointGroupPositions(joint_model_group,group_variable_values);
 
-    PlanningResultPtr result = plan(group_name_arm_hand,group_variable_values);
+    PlanningResultPtr result = plan_move(group_name_arm_hand,group_variable_values);
 
     return result;
 }
@@ -495,8 +425,8 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
   p.pose.orientation.w = q.w();
   g.grasp_pose = p;
   //approach
-  // the components of the vector of approach renge from -1 and +1 included.
-  // The direction of approahc must always be the opposite of the typed values.
+  // the components of the vector of approach range from -1 and +1 included.
+  // The direction of approach must always be the opposite of the typed values.
   // this guarantees that the point of contact is calculated correctly and that the hand goes towards it.
   g.pre_grasp_approach.direction.header.frame_id = FRAME_ID;
   g.pre_grasp_approach.direction.vector.x = -app_vv(0);
@@ -529,14 +459,14 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
 
   grasps.push_back(g);
 
-  result = this->plan_pick(obj_name,grasps);
+  result = this->plan_pick(obj_name,params.support_surface,grasps);
 
 
   return result;
 }
 
 
-PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vector<Grasp> &grasps)
+PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const string &support_surf, const vector<Grasp> &grasps)
 {
     PlanningResultPtr result;
 
@@ -566,10 +496,10 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vect
     //goal.allowed_touch_objects = allowed_touch_objects;
     //goal.attached_object_touch_links = attached_object_touch_links;
     goal.allowed_planning_time = planning_time;
-    goal.support_surface_name = support_surface;
+    goal.support_surface_name = support_surf;
     goal.planner_id = planner_id;
 
-    //if (!support_surface.empty()) {
+    //if (!support_surf.empty()) {
       //  goal.allow_gripper_support_collision = true;
     //}
 
@@ -619,8 +549,114 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const vect
     return result;
 }
 
+PlanningResultPtr HumanoidPlanner::place(moveit_params &params)
+{
+    PlanningResultPtr result;
+    int arm_code = params.arm_code;
+    this->planner_id = params.config;
 
-PlanningResultPtr HumanoidPlanner::plan_place(const string &object_id, const vector<PlaceLocation> &locations)
+    switch(arm_code){
+    case 0:// both arms
+        // TO DO
+        break;
+    case 1: // right arm
+        this->group_name_arm = "right_arm";
+        this->group_name_hand = "right_hand";
+        this->group_name_arm_hand = "right_arm_hand";
+        break;
+    case 2:// left arm
+        this->group_name_arm = "left_arm";
+        this->group_name_hand = "left_hand";
+        this->group_name_arm_hand = "left_arm_hand";
+        break;
+    }
+
+    // try to find the name of the end effector...
+    joint_model_group = robot_model->getJointModelGroup(this->group_name_arm);
+    const vector<const robot_model::JointModelGroup *> eefs = robot_model->getEndEffectors();
+    for(size_t i = 0; i < eefs.size(); ++i) {
+        string eefName = eefs[i]->getName();
+        string parent_name = eefs[i]->getEndEffectorParentGroup().first;
+        if(parent_name == this->group_name_arm) {
+            this->end_effector = eefName;
+            break;
+        }
+    }
+    // get the name of the end effector link in the arm...
+    this->end_effector_link = joint_model_group->getLinkModelNames().back();
+
+    // location
+    std::vector<double> loc = params.target;
+    Vector3d loc_pos(loc.at(0),loc.at(1),loc.at(2));
+    std::vector<double> rpy = {loc.at(3),loc.at(4),loc.at(5)};
+    Matrix3d Rot_loc; this->RPY_matrix(rpy,Rot_loc);
+    Quaterniond q_loc(Rot_loc);
+
+    // approach
+    std::vector<double> approach = params.pre_place_approach;
+    Vector3d v_app(approach.at(0),approach.at(1),approach.at(2));
+    Vector3d app_vv =Rot_loc*v_app;
+    double dist_app = approach.at(3);
+
+    // retreat
+    std::vector<double> retreat = params.post_place_retreat;
+    Vector3d v_ret(retreat.at(0),retreat.at(1),retreat.at(2));
+    Vector3d ret_vv =Rot_loc*v_ret;
+    double dist_ret = retreat.at(3);
+
+    // Place locations
+    std::vector<PlaceLocation> locs;
+    geometry_msgs::PoseStamped p;
+    p.header.frame_id = FRAME_ID;
+    p.pose.position.x = loc_pos(0);
+    p.pose.position.y = loc_pos(1);
+    p.pose.position.z = loc_pos(2);
+    p.pose.orientation.x = q_loc.x();
+    p.pose.orientation.y = q_loc.y();
+    p.pose.orientation.z = q_loc.z();
+    p.pose.orientation.w = q_loc.w();
+    moveit_msgs::PlaceLocation g;
+    g.place_pose = p;
+
+    // approach
+    // the components of the vector of approach range from -1 and +1 included.
+    // The direction of approach must always be the opposite of the typed values.
+    // this guarantees that the point of contact is calculated correctly and that the object approaches correctly.
+    g.pre_place_approach.direction.header.frame_id = FRAME_ID;
+    g.pre_place_approach.direction.vector.x = -app_vv(0);
+    g.pre_place_approach.direction.vector.y = -app_vv(1);
+    g.pre_place_approach.direction.vector.z = -app_vv(2);
+    g.pre_place_approach.min_distance = dist_app/2;
+    g.pre_place_approach.desired_distance = dist_app;
+    // retreat
+    g.post_place_retreat.direction.header.frame_id = FRAME_ID;
+    g.post_place_retreat.direction.vector.x = ret_vv(0);
+    g.post_place_retreat.direction.vector.y = ret_vv(1);
+    g.post_place_retreat.direction.vector.z = ret_vv(2);
+    g.post_place_retreat.min_distance = dist_ret/2;
+    g.post_place_retreat.desired_distance = dist_ret;
+
+    int hand_code = params.hand_code;
+    switch(hand_code){
+    case 0:// human hand
+        // TO DO
+        break;
+    case 1:// barrett hand
+        this->openBarrettHand(params.finalHand,g.post_place_posture);
+        break;
+
+    }
+    std::string obj_name = params.obj_name;
+    locs.push_back(g);
+
+    result = this->plan_place(obj_name,params.support_surface,locs);
+    return result;
+}
+
+
+
+
+PlanningResultPtr HumanoidPlanner::plan_place(const string &object_id, const string &support_surf, const vector<PlaceLocation> &locations)
 {
     PlanningResultPtr result;
     result.reset(new PlanningResult);
@@ -646,10 +682,10 @@ PlanningResultPtr HumanoidPlanner::plan_place(const string &object_id, const vec
     goal.attached_object_name = object_id;
     goal.group_name = group_name_arm;
     goal.allowed_planning_time = planning_time;
-    goal.support_surface_name = support_surface;
+    goal.support_surface_name = support_surf;
     goal.planner_id = planner_id;
 
-    if (!support_surface.empty()) {
+    if (!support_surf.empty()) {
         goal.allow_gripper_support_collision = true;
     }
 
@@ -693,7 +729,46 @@ PlanningResultPtr HumanoidPlanner::plan_place(const string &object_id, const vec
     return result;
 }
 
-PlanningResultPtr HumanoidPlanner::plan(const std::string group, const std::vector<double> posture)
+PlanningResultPtr HumanoidPlanner::move(moveit_params &params, const std::vector<double> goal_posture)
+{
+    PlanningResultPtr result;
+    int arm_code = params.arm_code;
+    this->planner_id = params.config;
+
+    switch(arm_code){
+    case 0:// both arms
+        // TO DO
+        break;
+    case 1: // right arm
+        this->group_name_arm = "right_arm";
+        this->group_name_hand = "right_hand";
+        this->group_name_arm_hand = "right_arm_hand";
+        break;
+    case 2:// left arm
+        this->group_name_arm = "left_arm";
+        this->group_name_hand = "left_hand";
+        this->group_name_arm_hand = "left_arm_hand";
+        break;
+    }
+
+    int hand_code = params.hand_code;
+    std::vector<double> goal_posture_ext = goal_posture;
+    switch(hand_code){
+    case 0:// human hand
+        // TO DO
+        break;
+    case 1:// barrett hand
+        this->setJoints_barrettHand(params.finalHand,goal_posture_ext);
+        break;
+
+    }
+    result = this->plan_move(this->group_name_arm_hand,goal_posture_ext);
+    return result;
+
+
+}
+
+PlanningResultPtr HumanoidPlanner::plan_move(const std::string group, const std::vector<double> posture)
 {
     PlanningResultPtr result;
     result.reset(new PlanningResult);
@@ -923,35 +998,59 @@ void HumanoidPlanner::RPY_matrix(std::vector<double> rpy, Matrix3d &Rot)
     }
 }
 
+void HumanoidPlanner::setJoints_barrettHand(std::vector<double> finalHand, std::vector<double> &goal_posture_ext)
+{
+    const robot_model::JointModelGroup * joint_model_group = robot_model->getJointModelGroup(this->group_name_arm_hand);
+    std::vector<std::string> names = joint_model_group->getActiveJointModelNames();
+
+    for(size_t i =0; i < names.size(); ++i){
+        if(i==7 || i==10){
+            goal_posture_ext.push_back(finalHand.at(0));
+        }else if(i==8){
+            goal_posture_ext.push_back(finalHand.at(1));
+        }else if(i==9){
+            goal_posture_ext.push_back(finalHand.at(1)/3);
+        }else if(i==11){
+            goal_posture_ext.push_back(finalHand.at(2));
+        }else if(i==12){
+            goal_posture_ext.push_back(finalHand.at(2)/3);
+        }else if(i==13){
+            goal_posture_ext.push_back(finalHand.at(3));
+        }else if(i==14){
+            goal_posture_ext.push_back(finalHand.at(3)/3);
+        }
+    }
+}
+
 void HumanoidPlanner::openBarrettHand(std::vector<double> finalHand, trajectory_msgs::JointTrajectory &posture)
 {
 
     const robot_model::JointModelGroup * joint_model_group = robot_model->getJointModelGroup(this->group_name_hand);
-    std::vector<std::string> names = joint_model_group->getJointModelNames();
+    std::vector<std::string> names = joint_model_group->getActiveJointModelNames();
     //posture.joint_names.resize(names.size());
     posture.points.resize(1);
     //posture.points[0].positions.resize(names.size());
     for(size_t i =0; i < names.size(); ++i){
         //std::cout << names.at(i).c_str() << endl;
         //posture.joint_names[i] = names.at(i);
-        if(i==2 || i==5){
+        if(i==0 || i==3){
             posture.joint_names.push_back(names.at(i));
             posture.points[0].positions.push_back(finalHand.at(0));
-        }else if(i==3){
+        }else if(i==1){
             posture.joint_names.push_back(names.at(i));
             if((finalHand.at(1)-AP) < 0){
                 posture.points[0].positions.push_back(0.0);
             }else{
                 posture.points[0].positions.push_back(finalHand.at(1)-AP);
             }
-        }else if(i==6){
+        }else if(i==4){
             posture.joint_names.push_back(names.at(i));
             if((finalHand.at(2)-AP) < 0){
                 posture.points[0].positions.push_back(0.0);
             }else{
                 posture.points[0].positions.push_back(finalHand.at(2)-AP);
             }
-        }else if(i==8){
+        }else if(i==6){
             posture.joint_names.push_back(names.at(i));
             if((finalHand.at(3)-AP) < 0){
                 posture.points[0].positions.push_back(0.0);
@@ -965,23 +1064,23 @@ void HumanoidPlanner::openBarrettHand(std::vector<double> finalHand, trajectory_
 void HumanoidPlanner::closedBarrettHand(std::vector<double> finalHand, trajectory_msgs::JointTrajectory& posture)
 {
     const robot_model::JointModelGroup * joint_model_group = robot_model->getJointModelGroup(this->group_name_hand);
-    std::vector<std::string> names = joint_model_group->getJointModelNames();
+    std::vector<std::string> names = joint_model_group->getActiveJointModelNames();
     //posture.joint_names.resize(names.size());
     posture.points.resize(1);
     //posture.points[0].positions.resize(names.size());
     for(size_t i =0; i < names.size(); ++i){
         //std::cout << names.at(i).c_str() << endl;
         //posture.joint_names[i] = names.at(i);
-        if(i==2 || i==5){
+        if(i==0 || i==3){
             posture.joint_names.push_back(names.at(i));
             posture.points[0].positions.push_back(finalHand.at(0));
-        }else if(i==3){
+        }else if(i==1){
             posture.joint_names.push_back(names.at(i));
             posture.points[0].positions.push_back(finalHand.at(1));
-        }else if(i==6){
+        }else if(i==4){
             posture.joint_names.push_back(names.at(i));
             posture.points[0].positions.push_back(finalHand.at(2));
-        }else if(i==8){
+        }else if(i==6){
             posture.joint_names.push_back(names.at(i));
             posture.points[0].positions.push_back(finalHand.at(3));
         }

@@ -183,7 +183,6 @@ void HumanoidPlanner::init()
     planner_id = "RRTConnectkConfigDefault";
 
 
-
     ROS_INFO("Connecting to pickup action...");
     string pickup_topic = "pickup";
     pick_action_client.reset(new actionlib::SimpleActionClient<moveit_msgs::PickupAction>(pickup_topic, true));

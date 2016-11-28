@@ -23,8 +23,10 @@
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <geometric_shapes/mesh_operations.h>
 #include <geometric_shapes/shape_operations.h>
+#include <geometric_shapes/solid_primitive_dims.h>
 
 #include "common.hpp"
+#include "kinematics_helper.hpp"
 
 using namespace std;
 using namespace moveit_msgs;
@@ -198,13 +200,9 @@ public:
      */
     PlanningResultPtr plan_place(const string &object_id, const string &support_surf, const vector<PlaceLocation> &locations);
 
-    /**
-     * @brief plan
-     * Plan the movement to reach the pose of the given goal
-     * @param pose_goal
-     * @return
-     */
-    PlanningResultPtr plan(const geometry_msgs::Pose &pose_goal);
+
+    //PlanningResultPtr plan_move(const std::string group_arm, const std::string group_hand, const geometry_msgs::Pose &pose_goal, int hand_code, std::vector<double> hand_posture);
+
 
     /**
      * @brief move
@@ -215,6 +213,13 @@ public:
     PlanningResultPtr move(moveit_params& params, const std::vector<double> goal_posture);
 
     /**
+     * @brief move
+     * @param params
+     * @return
+     */
+    PlanningResultPtr move(moveit_params& params);
+
+    /**
      * @brief plan_move
      * Plan the movement to reach the given posture
      * @param posture
@@ -222,6 +227,15 @@ public:
      * @return
      */
     PlanningResultPtr plan_move(const std::string group, const std::vector<double> posture);
+
+    /**
+     * @brief plan_move
+     * @param group
+     * @param posture
+     * @param traj_c
+     * @return
+     */
+    PlanningResultPtr plan_move(const std::string group, const std::vector<double> posture, const moveit_msgs::TrajectoryConstraints traj_c);
 
     /**
      * @brief plan_arm_to_default

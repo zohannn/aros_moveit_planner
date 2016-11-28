@@ -42,7 +42,7 @@ bool KinematicsHelper::computeIK(const string &arm,
 
 	moveit_msgs::GetPositionIKRequest request;
 
-	request.ik_request.group_name = arm + "_arm";
+    request.ik_request.group_name = arm;
 	request.ik_request.pose_stamped = goal;
 	request.ik_request.attempts = attempts;
 	request.ik_request.timeout = ros::Duration(timeout);

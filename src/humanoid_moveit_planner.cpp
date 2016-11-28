@@ -216,6 +216,7 @@ void HumanoidPlanner::init()
         ROS_INFO("Move action client available!");
     }
 
+
     execution_client = nh.serviceClient<ExecuteKnownTrajectory>("execute_kinematic_path");
     attached_object_pub = nh.advertise<AttachedCollisionObject>("attached_collision_object", 1, false);
     get_planning_scene_client = nh.serviceClient<GetPlanningScene>("get_planning_scene");
@@ -767,6 +768,119 @@ PlanningResultPtr HumanoidPlanner::move(moveit_params &params, const std::vector
 
 }
 
+PlanningResultPtr HumanoidPlanner::move(moveit_params &params)
+{
+    PlanningResultPtr result;
+    int arm_code = params.arm_code;
+    this->planner_id = params.config;
+
+    switch(arm_code){
+    case 0:// both arms
+        // TO DO
+        break;
+    case 1: // right arm
+        this->group_name_arm = "right_arm";
+        this->group_name_hand = "right_hand";
+        this->group_name_arm_hand = "right_arm_hand";
+        break;
+    case 2:// left arm
+        this->group_name_arm = "left_arm";
+        this->group_name_hand = "left_hand";
+        this->group_name_arm_hand = "left_arm_hand";
+        break;
+    }
+
+    geometry_msgs::Pose pose_goal;
+    // position
+    pose_goal.position.x = params.target.at(0);
+    pose_goal.position.y = params.target.at(1);
+    pose_goal.position.z = params.target.at(2);
+    // orientation
+    Matrix3d Rot_tar; std::vector<double>rpy;
+    rpy.push_back(params.target.at(3)); rpy.push_back(params.target.at(4)); rpy.push_back(params.target.at(5));
+    this->RPY_matrix(rpy,Rot_tar);
+    Quaterniond q(Rot_tar);
+    pose_goal.orientation.x = q.x();
+    pose_goal.orientation.y = q.y();
+    pose_goal.orientation.z = q.z();
+    pose_goal.orientation.w = q.w();
+
+    geometry_msgs::PoseStamped pose;
+    pose.header.stamp=ros::Time::now();
+    pose.header.frame_id = FRAME_ID;
+    pose.pose=pose_goal;
+
+    const robot_model::JointModelGroup * joint_model_group = robot_model->getJointModelGroup(group_name_arm);
+    // compute the inverse kinematic solution
+    moveit_msgs::RobotState sol;
+    trajectory_planner_moveit::KinematicsHelper kin_help(this->nh);
+    bool ik_solved = kin_help.computeIK(group_name_arm,pose,sol);
+    if(ik_solved){
+        std::vector<std::string> joints_name = joint_model_group->getActiveJointModelNames();
+        vector<double> goal_posture; getJointPositionsFromState(joints_name, sol, goal_posture);
+        int hand_code = params.hand_code;
+        std::vector<double> goal_posture_ext = goal_posture;
+        switch(hand_code){
+        case 0:// human hand
+            // TO DO
+            break;
+        case 1:// barrett hand
+            this->setJoints_barrettHand(params.finalHand,goal_posture_ext);
+            break;
+
+        }
+        if(params.use_move_plane){
+            moveit_msgs::TrajectoryConstraints traj_c; std::vector<moveit_msgs::Constraints> cons; moveit_msgs::Constraints con;
+            moveit_msgs::PositionConstraint pos_c; std::vector<moveit_msgs::PositionConstraint> pos_cons;
+            std::string end_effector_link = joint_model_group->getLinkModelNames().back();
+            pos_c.link_name = end_effector_link;
+            pos_c.weight = 0.1;
+            moveit_msgs::BoundingVolume vol;
+            vol.primitives.resize(1);
+            vol.primitives[0].type = shape_msgs::SolidPrimitive::BOX;
+            vol.primitives[0].dimensions.resize(geometric_shapes::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::BOX>::value);
+            // creating the shape from the plane
+            std::vector<double>plane_params = params.plane_params; double a = plane_params.at(0); double b = plane_params.at(1); double c = plane_params.at(2); double d = plane_params.at(3);
+            std::vector<double>point1 = params.plane_point1; std::vector<double>point2 = params.plane_point2; std::vector<double>point3 = params.plane_point3;
+            Vector3d n(a,b,c);// normal vector to the plane
+            Vector3d z_plane = -n; // z axis of the shape
+            // y axis of the shape
+            double y_norm = sqrt(pow((pose_goal.position.x - point1.at(0)),2)+pow((pose_goal.position.y - point1.at(1)),2)+pow((pose_goal.position.z - point1.at(2)),2));
+            Vector3d y_plane((params.target.at(0) - point1.at(0))/y_norm,(params.target.at(1) - point1.at(1))/y_norm,(params.target.at(2) - point1.at(2))/y_norm);
+            Vector3d x_plane = y_plane.cross(z_plane); // x axis of the shape
+            Matrix3d Rot_shape = Matrix3d::Zero();
+            Rot_shape.col(0)=x_plane; Rot_shape.col(1)=y_plane; Rot_shape.col(2)=z_plane;
+            Quaterniond q(Rot_shape);
+            //size
+            vol.primitives[0].dimensions[shape_msgs::SolidPrimitive::BOX_X] = pow((pose_goal.position.x - point2.at(0)),2);;
+            vol.primitives[0].dimensions[shape_msgs::SolidPrimitive::BOX_Y] = pow((pose_goal.position.y - point1.at(1)),2);
+            vol.primitives[0].dimensions[shape_msgs::SolidPrimitive::BOX_Z] = 0.01; // 1 cm
+            vol.primitive_poses.resize(1);
+            //position
+            vol.primitive_poses[0].position.x = pose_goal.position.x;
+            vol.primitive_poses[0].position.y = pose_goal.position.y;
+            vol.primitive_poses[0].position.z = pose_goal.position.z;
+            //orientation
+            vol.primitive_poses[0].orientation.x = q.x();
+            vol.primitive_poses[0].orientation.y = q.y();
+            vol.primitive_poses[0].orientation.z = q.z();
+            vol.primitive_poses[0].orientation.w = q.w();
+            pos_c.constraint_region = vol;
+            pos_cons.push_back(pos_c);
+            con.position_constraints = pos_cons;
+            cons.push_back(con);
+            traj_c.constraints = cons;
+            result = this->plan_move(this->group_name_arm_hand,goal_posture_ext,traj_c);
+        }else{
+            result = this->plan_move(this->group_name_arm_hand,goal_posture_ext);
+        }
+    }
+
+    return result;
+
+
+}
+
 PlanningResultPtr HumanoidPlanner::plan_move(const std::string group, const std::vector<double> posture)
 {
     PlanningResultPtr result;
@@ -803,7 +917,7 @@ PlanningResultPtr HumanoidPlanner::plan_move(const std::string group, const std:
     goal.planning_options.replan = false;
     goal.planning_options.planning_scene_diff.is_diff = true;
     goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
-    goal.request.goal_constraints.push_back(c);
+    goal.request.goal_constraints.push_back(c);    
 
     move_action_client->sendGoal(goal);
 
@@ -841,14 +955,88 @@ PlanningResultPtr HumanoidPlanner::plan_move(const std::string group, const std:
 
 }
 
-PlanningResultPtr HumanoidPlanner::plan(const geometry_msgs::Pose &pose_goal)
+PlanningResultPtr HumanoidPlanner::plan_move(const string group, const std::vector<double> posture, const TrajectoryConstraints traj_c)
 {
     PlanningResultPtr result;
     result.reset(new PlanningResult);
     result->type = HumanoidPlanner::GOAL;
 
     moveit_msgs::MoveGroupGoal goal;
-    goal.request.group_name = group_name_arm;
+    goal.request.group_name = group;
+    goal.request.num_planning_attempts = planning_attempts;
+    goal.request.allowed_planning_time = planning_time;
+    goal.request.planner_id = planner_id;
+
+
+    robot_state::RobotState robot_state(robot_model);
+    const robot_state::JointModelGroup *joint_model_group = robot_state.getJointModelGroup(group);
+
+    std::vector<string> joint_names = joint_model_group->getActiveJointModelNames();
+
+    moveit_msgs::Constraints c;
+
+    for (size_t i=0; i<posture.size(); ++i)
+    {
+        moveit_msgs::JointConstraint jcm;
+        jcm.joint_name = joint_names.at(i);
+        jcm.position = posture.at(i);
+        jcm.tolerance_above = 0.05;
+        jcm.tolerance_below = 0.05;
+        jcm.weight = 1.0;
+        c.joint_constraints.push_back(jcm);
+    }
+
+    goal.planning_options.plan_only = true;
+    goal.planning_options.look_around = false;
+    goal.planning_options.replan = false;
+    goal.planning_options.planning_scene_diff.is_diff = true;
+    goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
+    goal.request.goal_constraints.push_back(c);
+    goal.request.trajectory_constraints = traj_c;
+
+    move_action_client->sendGoal(goal);
+
+    ROS_DEBUG("Sent planning request for posture");
+
+    if (!move_action_client->waitForResult()) {
+        ROS_INFO_STREAM("MoveGroup action returned early");
+    }
+
+    moveit_msgs::MoveGroupResultConstPtr res = move_action_client->getResult();
+
+    if (move_action_client->getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
+        ROS_INFO("Call to move_group action server succeeded!");
+
+        result->status = HumanoidPlanner::SUCCESS;
+        result->status_msg = "Call to pick action server succeeded!";
+        result->start_state = res->trajectory_start;
+        result->trajectory_descriptions.push_back("target");
+        result->trajectory_stages.push_back(res->planned_trajectory);
+
+    } else {
+        ROS_WARN_STREAM("Fail: " << move_action_client->getState().toString() << ": "
+                        << move_action_client->getState().getText());
+
+        result->status = HumanoidPlanner::FAILURE;
+        stringstream ss;
+        ss << "Planning failed with status code '" << res->error_code.val << "'";
+        result->status_msg = ss.str();
+    }
+
+
+
+    return result;
+}
+
+/*
+PlanningResultPtr HumanoidPlanner::plan_move(const std::string group_arm, const std::string group_hand, const geometry_msgs::Pose &pose_goal, int hand_code, std::vector<double> hand_posture)
+{
+    PlanningResultPtr result;
+    result.reset(new PlanningResult);
+    result->type = HumanoidPlanner::GOAL;
+
+    moveit_msgs::MoveGroupGoal goal;
+    goal.request.group_name = group_arm;
     goal.request.num_planning_attempts = planning_attempts;
     goal.request.allowed_planning_time = planning_time;
     goal.request.planner_id = planner_id;
@@ -858,17 +1046,24 @@ PlanningResultPtr HumanoidPlanner::plan(const geometry_msgs::Pose &pose_goal)
     p.header.stamp = ros::Time::now();
     p.pose = pose_goal;
 
-    //vector<Constraints> constraints;
-    Constraints c =	kinematic_constraints::constructGoalConstraints(end_effector_link,	p,
+    robot_state::RobotState robot_state(robot_model);
+    // pose constraints
+    const robot_state::JointModelGroup *joint_model_group_arm = robot_state.getJointModelGroup(group_arm);
+    std::string end_effector_link = joint_model_group_arm->getLinkModelNames().back();
+    Constraints c_kin =	kinematic_constraints::constructGoalConstraints(end_effector_link,	p,
                                                                     goal_position_tolerance,
                                                                     goal_orientation_tolerance);
+    goal.request.goal_constraints.push_back(c_kin);
+
+
+
 
     goal.planning_options.plan_only = true;
     goal.planning_options.look_around = false;
     goal.planning_options.replan = false;
     goal.planning_options.planning_scene_diff.is_diff = true;
     goal.planning_options.planning_scene_diff.robot_state.is_diff = true;
-    goal.request.goal_constraints.push_back(c);
+
 
     move_action_client->sendGoal(goal);
 
@@ -902,6 +1097,7 @@ PlanningResultPtr HumanoidPlanner::plan(const geometry_msgs::Pose &pose_goal)
 
     return result;
 }
+*/
 
 bool HumanoidPlanner::execute(const PlanningResultPtr &plan)
 {

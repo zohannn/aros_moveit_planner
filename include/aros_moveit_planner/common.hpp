@@ -64,6 +64,11 @@ typedef struct{
     std::string obj_name; /**< object involved in the movement */
     double tol_stop; /**< this tolerance defines the error between the norm of the final posture and the norm the current posture.
                     It has to be set to stop the movement when the final posture is reached. A tipical value is 0.1  */
+    bool use_move_plane; /**< true to constrain the end-effector to move on a plane in move movements, false otherwise*/
+    std::vector<double> plane_params; /**< plane cartesian parameters in move movements: a*x+b*y+c*z+d=0. a=plane_params(0), b=plane_params(1), c=plane_params(2), d=plane_params(3) */
+    std::vector<double> plane_point1; /**< point1 that belongs to the plane */
+    std::vector<double> plane_point2; /**< point2 that belongs to the plane */
+    std::vector<double> plane_point3; /**< point3 that belongs to the plane */
 } moveit_params;
 
 /**

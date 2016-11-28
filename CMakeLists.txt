@@ -168,8 +168,8 @@ link_directories(${catkin_LIBRARY_DIRS})
 
 ## Kinematic helper library
 file(GLOB_RECURSE KIN_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
-    include/kinematics_helper.hpp
-    include/common.hpp
+    include/${PROJECT_NAME}/kinematics_helper.hpp
+    include/${PROJECT_NAME}/common.hpp
     )
 file(GLOB_RECURSE KIN_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
     src/kinematics_helper.cpp
@@ -180,8 +180,8 @@ target_link_libraries(kinematics_helper ${catkin_LIBRARIES})
 
 ## Trajectory planner library
 file(GLOB_RECURSE TRAJ_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
-    include/trajectory_planner.hpp
-    include/base_planner.hpp
+    include/${PROJECT_NAME}/trajectory_planner.hpp
+    include/${PROJECT_NAME}/base_planner.hpp
     ${KIN_HPP_SOURCES}
     )
 file(GLOB_RECURSE TRAJ_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
@@ -194,7 +194,7 @@ target_link_libraries(trajectory_planner ${catkin_LIBRARIES})
 
 ## Path Trajectory planner library
 file(GLOB_RECURSE PTRAJ_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
-     include/path_trajectory_planner.hpp
+     include/${PROJECT_NAME}/path_trajectory_planner.hpp
      ${TRAJ_HPP_SOURCES}
      )
 file(GLOB_RECURSE PTRAJ_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
@@ -206,7 +206,7 @@ target_link_libraries(path_trajectory_planner ${catkin_LIBRARIES})
 
 ## Visualization tools library
 file(GLOB_RECURSE VIS_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
-     include/visualization_tools.hpp
+     include/${PROJECT_NAME}/visualization_tools.hpp
      )
 file(GLOB_RECURSE VIS_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
      src/visualization_tools.cpp
@@ -217,10 +217,12 @@ target_link_libraries(visualization_tools ${catkin_LIBRARIES})
 ## Humanoid MoveIt! Planner Library
 file(GLOB_RECURSE HP_HPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
      include/${PROJECT_NAME}/humanoid_moveit_planner.hpp
+     include/${PROJECT_NAME}/kinematics_helper.hpp
      include/${PROJECT_NAME}/common.hpp
      )
 file(GLOB_RECURSE HP_CPP_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} FOLLOW_SYMLINKS
      src/humanoid_moveit_planner.cpp
+     src/kinematics_helper.cpp
      src/common.cpp
     )
 add_library(humanoid_planner ${HP_CPP_SOURCES} ${HP_HPP_SOURCES})

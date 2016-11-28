@@ -38,7 +38,7 @@ TEST(TestSuite_kin_helper, Test_kin_goal1)
     bool success=false;
 
     ROS_INFO("Kinematic helper test goal 1: Computing test pose");
-    if(helper.computeIK("right", pose, solution)) {
+    if(helper.computeIK("right_arm", pose, solution)) {
         printJointsValues(solution,"right");
         geometry_msgs::Pose pose;
         ROS_INFO("Kinematic helper test goal 1: Computing FK result for given solution");

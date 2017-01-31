@@ -44,7 +44,7 @@ using namespace Eigen;
 
 namespace moveit_planning {
 
-const double AP = 6.0*static_cast<double>(M_PI)/180; /**< aperture of the fingers when approaching to pick */
+const double AP = 15.0*static_cast<double>(M_PI)/180; /**< aperture of the fingers when approaching to pick */
 
 /** this struct defines the tolerances that have to be set before planning the trajectory*/
 typedef struct{

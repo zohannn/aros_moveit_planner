@@ -605,11 +605,12 @@ PlanningResultPtr HumanoidPlanner::place(moveit_params &params)
     double dist_ret = retreat.at(3);
 
     // Place locations
+    double tol_y = ((double)5.0)/1000;// [m]
     std::vector<PlaceLocation> locs;
     geometry_msgs::PoseStamped p;
     p.header.frame_id = FRAME_ID;
     p.pose.position.x = loc_pos(0);
-    p.pose.position.y = loc_pos(1);
+    p.pose.position.y = loc_pos(1)+tol_y;
     p.pose.position.z = loc_pos(2);
     p.pose.orientation.x = q_loc.x();
     p.pose.orientation.y = q_loc.y();

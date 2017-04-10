@@ -69,6 +69,8 @@ typedef struct{
     std::vector<double> plane_point1; /**< point1 that belongs to the plane */
     std::vector<double> plane_point2; /**< point2 that belongs to the plane */
     std::vector<double> plane_point3; /**< point3 that belongs to the plane */
+    bool approach;/**< true to use the approach options, false otherwise  */
+    bool retreat;/**< true to use the retreat options, false otherwise */
 } moveit_params;
 
 /**

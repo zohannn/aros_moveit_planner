@@ -368,7 +368,7 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
   Vector3d tar_pos(tar.at(0),tar.at(1),tar.at(2));
   std::vector<double> rpy = {tar.at(3),tar.at(4),tar.at(5)};
   Matrix3d Rot_tar; this->RPY_matrix(rpy,Rot_tar);
-  Vector3d z_tar = Rot_tar.col(2);
+  Vector3d x_tar = Rot_tar.col(0); Vector3d y_tar = Rot_tar.col(1); Vector3d z_tar = Rot_tar.col(2);
 
   // approach
   std::vector<double> approach = params.pre_grasp_approach;
@@ -392,12 +392,11 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
   p.pose.position.y = pose_position(1);
   p.pose.position.z = pose_position(2);
   // orientation of the pose
-  Vector3d z_hand = -app_vv; // z axis of the hand;
-  Vector3d x_hand; Vector3d y_hand;
+  Vector3d x_hand; Vector3d y_hand; Vector3d z_hand;
   int griptype = params.griptype;
   switch(griptype){
   case 211: case 111:// Side thumb left
-      x_hand = z_tar;
+      x_hand = z_tar; z_hand = -y_tar;
       break;
   case 112: case 212:// Side thumb right
       // TO DO
@@ -424,23 +423,31 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
   p.pose.orientation.z = q.z();
   p.pose.orientation.w = q.w();
   g.grasp_pose = p;
-  //approach
-  // the components of the vector of approach range from -1 and +1 included.
-  // The direction of approach must always be the opposite of the typed values.
-  // this guarantees that the point of contact is calculated correctly and that the hand goes towards it.
-  g.pre_grasp_approach.direction.header.frame_id = FRAME_ID;
-  g.pre_grasp_approach.direction.vector.x = -app_vv(0);
-  g.pre_grasp_approach.direction.vector.y = -app_vv(1);
-  g.pre_grasp_approach.direction.vector.z = -app_vv(2);
-  g.pre_grasp_approach.min_distance = dist_app/2;
-  g.pre_grasp_approach.desired_distance = dist_app;
-  // retreat
-  g.post_grasp_retreat.direction.header.frame_id = FRAME_ID;
-  g.post_grasp_retreat.direction.vector.x = ret_vv(0);
-  g.post_grasp_retreat.direction.vector.y = ret_vv(1);
-  g.post_grasp_retreat.direction.vector.z = ret_vv(2);
-  g.post_grasp_retreat.min_distance = dist_ret/2;
-  g.post_grasp_retreat.desired_distance = dist_ret;
+
+  if(params.approach){
+      //approach
+      // the components of the vector of approach range from -1 and +1 included.
+      // The direction of approach must always be the opposite of the typed values.
+      // this guarantees that the point of contact is calculated correctly and that the hand goes towards it.
+      g.pre_grasp_approach.direction.header.frame_id = FRAME_ID;
+      g.pre_grasp_approach.direction.vector.x = -app_vv(0);
+      g.pre_grasp_approach.direction.vector.y = -app_vv(1);
+      g.pre_grasp_approach.direction.vector.z = -app_vv(2);
+      g.pre_grasp_approach.min_distance = dist_app/2;
+      g.pre_grasp_approach.desired_distance = dist_app;
+  }
+
+  if(params.retreat){
+      // retreat
+      g.post_grasp_retreat.direction.header.frame_id = FRAME_ID;
+      g.post_grasp_retreat.direction.vector.x = ret_vv(0);
+      g.post_grasp_retreat.direction.vector.y = ret_vv(1);
+      g.post_grasp_retreat.direction.vector.z = ret_vv(2);
+      g.post_grasp_retreat.min_distance = dist_ret/2;
+      g.post_grasp_retreat.desired_distance = dist_ret;
+  }
+
+
 
   int hand_code = params.hand_code;
   switch(hand_code){
@@ -619,23 +626,28 @@ PlanningResultPtr HumanoidPlanner::place(moveit_params &params)
     moveit_msgs::PlaceLocation g;
     g.place_pose = p;
 
-    // approach
-    // the components of the vector of approach range from -1 and +1 included.
-    // The direction of approach must always be the opposite of the typed values.
-    // this guarantees that the point of contact is calculated correctly and that the object approaches correctly.
-    g.pre_place_approach.direction.header.frame_id = FRAME_ID;
-    g.pre_place_approach.direction.vector.x = -app_vv(0);
-    g.pre_place_approach.direction.vector.y = -app_vv(1);
-    g.pre_place_approach.direction.vector.z = -app_vv(2);
-    g.pre_place_approach.min_distance = dist_app/2;
-    g.pre_place_approach.desired_distance = dist_app;
-    // retreat
-    g.post_place_retreat.direction.header.frame_id = FRAME_ID;
-    g.post_place_retreat.direction.vector.x = ret_vv(0);
-    g.post_place_retreat.direction.vector.y = ret_vv(1);
-    g.post_place_retreat.direction.vector.z = ret_vv(2);
-    g.post_place_retreat.min_distance = dist_ret/2;
-    g.post_place_retreat.desired_distance = dist_ret;
+    if(params.approach){
+        // approach
+        // the components of the vector of approach range from -1 and +1 included.
+        // The direction of approach must always be the opposite of the typed values.
+        // this guarantees that the point of contact is calculated correctly and that the object approaches correctly.
+        g.pre_place_approach.direction.header.frame_id = FRAME_ID;
+        g.pre_place_approach.direction.vector.x = -app_vv(0);
+        g.pre_place_approach.direction.vector.y = -app_vv(1);
+        g.pre_place_approach.direction.vector.z = -app_vv(2);
+        g.pre_place_approach.min_distance = dist_app/2;
+        g.pre_place_approach.desired_distance = dist_app;
+    }
+
+    if(params.retreat){
+        // retreat
+        g.post_place_retreat.direction.header.frame_id = FRAME_ID;
+        g.post_place_retreat.direction.vector.x = ret_vv(0);
+        g.post_place_retreat.direction.vector.y = ret_vv(1);
+        g.post_place_retreat.direction.vector.z = ret_vv(2);
+        g.post_place_retreat.min_distance = dist_ret/2;
+        g.post_place_retreat.desired_distance = dist_ret;
+    }
 
     int hand_code = params.hand_code;
     switch(hand_code){

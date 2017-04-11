@@ -655,7 +655,9 @@ PlanningResultPtr HumanoidPlanner::place(moveit_params &params)
         // TO DO
         break;
     case 1:// barrett hand
-        this->openBarrettHand(params.finalHand,g.post_place_posture);
+        if(params.retreat){
+            this->openBarrettHand(params.finalHand,g.post_place_posture);
+        }
         break;
 
     }
@@ -1117,6 +1119,10 @@ bool HumanoidPlanner::execute(const PlanningResultPtr &plan)
     for (size_t i = 0; i < plan->trajectory_stages.size(); ++i) {
         string &description = plan->trajectory_descriptions[i];
 
+        if(description == "retreat" && plan->type == HumanoidPlanner::PLACE) {
+            detachObject(plan->object_id);
+        }
+
         ROS_INFO_STREAM("Executing stage '" << description << "'...");
         if(!execute(plan->trajectory_stages[i])) {
             return false;
@@ -1124,9 +1130,6 @@ bool HumanoidPlanner::execute(const PlanningResultPtr &plan)
 
         if(description == "grasp" && plan->type == HumanoidPlanner::PICK) {
             attachObject(plan->object_id);
-        }
-        else if(description == "grasp" && plan->type == HumanoidPlanner::PLACE) {
-            detachObject(plan->object_id);
         }
     }
 

@@ -387,10 +387,13 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
   p.header.frame_id = FRAME_ID;
   // position of the pose
   double dHO = params.dHO;
+  double tol_x = ((double)10.0)/1000;// [m]
+  double tol_y = ((double)0.0)/1000;// [m]
+  double tol_z = ((double)0.0)/1000;// [m]
   Vector3d pose_position = app_vv*dHO+tar_pos;
-  p.pose.position.x = pose_position(0);
-  p.pose.position.y = pose_position(1);
-  p.pose.position.z = pose_position(2);
+  p.pose.position.x = pose_position(0)+tol_x;
+  p.pose.position.y = pose_position(1)+tol_y;
+  p.pose.position.z = pose_position(2)+tol_z;
   // orientation of the pose
   Vector3d x_hand; Vector3d y_hand; Vector3d z_hand;
   int griptype = params.griptype;
@@ -612,13 +615,15 @@ PlanningResultPtr HumanoidPlanner::place(moveit_params &params)
     double dist_ret = retreat.at(3);
 
     // Place locations
-    double tol_y = ((double)5.0)/1000;// [m]
+    double tol_x = ((double)10.0)/1000;// [m]
+    double tol_y = ((double)0.0)/1000;// [m]
+    double tol_z = ((double)0.0)/1000;// [m]
     std::vector<PlaceLocation> locs;
     geometry_msgs::PoseStamped p;
     p.header.frame_id = FRAME_ID;
-    p.pose.position.x = loc_pos(0);
+    p.pose.position.x = loc_pos(0)+tol_x;
     p.pose.position.y = loc_pos(1)+tol_y;
-    p.pose.position.z = loc_pos(2);
+    p.pose.position.z = loc_pos(2)+tol_z;
     p.pose.orientation.x = q_loc.x();
     p.pose.orientation.y = q_loc.y();
     p.pose.orientation.z = q_loc.z();
@@ -807,9 +812,12 @@ PlanningResultPtr HumanoidPlanner::move(moveit_params &params)
 
     geometry_msgs::Pose pose_goal;
     // position
-    pose_goal.position.x = params.target.at(0);
-    pose_goal.position.y = params.target.at(1);
-    pose_goal.position.z = params.target.at(2);
+    double tol_x = ((double)10.0)/1000;// [m]
+    double tol_y = ((double)0.0)/1000;// [m]
+    double tol_z = ((double)0.0)/1000;// [m]
+    pose_goal.position.x = params.target.at(0)+tol_x;
+    pose_goal.position.y = params.target.at(1)+tol_y;
+    pose_goal.position.z = params.target.at(2)+tol_z;
     // orientation
     Matrix3d Rot_tar; std::vector<double>rpy;
     rpy.push_back(params.target.at(3)); rpy.push_back(params.target.at(4)); rpy.push_back(params.target.at(5));

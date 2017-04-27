@@ -509,9 +509,9 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const stri
     goal.support_surface_name = support_surf;
     goal.planner_id = planner_id;
 
-    //if (!support_surf.empty()) {
-      //  goal.allow_gripper_support_collision = true;
-    //}
+    if (!support_surf.empty()) {
+        goal.allow_gripper_support_collision = true;
+    }
 
     ROS_INFO("Pickup goal constructed for group '%s' and end effector '%s'", goal.group_name.c_str(), goal.end_effector.c_str());
 

@@ -387,7 +387,7 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
   p.header.frame_id = FRAME_ID;
   // position of the pose
   double dHO = params.dHO;
-  double tol_x = ((double)10.0)/1000;// [m]
+  double tol_x = ((double)0.0)/1000;// [m]
   double tol_y = ((double)0.0)/1000;// [m]
   double tol_z = ((double)0.0)/1000;// [m]
   Vector3d pose_position = app_vv*dHO+tar_pos;
@@ -615,7 +615,7 @@ PlanningResultPtr HumanoidPlanner::place(moveit_params &params)
     double dist_ret = retreat.at(3);
 
     // Place locations
-    double tol_x = ((double)10.0)/1000;// [m]
+    double tol_x = ((double)0.0)/1000;// [m]
     double tol_y = ((double)0.0)/1000;// [m]
     double tol_z = ((double)0.0)/1000;// [m]
     std::vector<PlaceLocation> locs;

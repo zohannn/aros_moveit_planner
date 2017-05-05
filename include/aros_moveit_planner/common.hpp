@@ -54,6 +54,7 @@ typedef struct{
     std::vector<double> pre_place_approach; /**< (0)= x component, (1)= y component, (2)= z component, (3)= distance form the target*/
     std::vector<double> post_place_retreat; /**< (0)= x component, (1)= y component, (2)= z component, (3)= distance form the target*/
     std::string support_surface; /**< support surface for pick and place movements */
+    std::vector<std::string> allowed_touch_objects; /**< list of allowed object to touch for pick and place movements */
     int arm_code; /**< the code of the arm: 0 = both arms, 1 = right arm, 2 = left arm */
     int hand_code;/**< the code of the hand: 0 = human hand, 1 = barrett hand */
     int griptype; /**< the type of the grip */

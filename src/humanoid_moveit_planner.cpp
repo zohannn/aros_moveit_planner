@@ -469,14 +469,14 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
 
   grasps.push_back(g);
 
-  result = this->plan_pick(obj_name,params.support_surface,grasps);
+  result = this->plan_pick(obj_name,params.support_surface,params.allowed_touch_objects,grasps);
 
 
   return result;
 }
 
 
-PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const string &support_surf, const vector<Grasp> &grasps)
+PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const string &support_surf, const std::vector<string> &allowed_touch_objects, const vector<Grasp> &grasps)
 {
     PlanningResultPtr result;
 
@@ -503,8 +503,9 @@ PlanningResultPtr HumanoidPlanner::plan_pick(const string &object_id, const stri
     goal.target_name = object_id;
     goal.group_name = group_name_arm;
     goal.end_effector = end_effector;
-    //goal.allowed_touch_objects = allowed_touch_objects;
-    //goal.attached_object_touch_links = attached_object_touch_links;
+    if(!allowed_touch_objects.empty()){
+        goal.allowed_touch_objects = allowed_touch_objects;
+    }
     goal.allowed_planning_time = planning_time;
     goal.support_surface_name = support_surf;
     goal.planner_id = planner_id;

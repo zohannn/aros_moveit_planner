@@ -141,7 +141,7 @@ public:
 
       grasps.push_back(g);
 
-        PlanningResultPtr plan = h_planner->plan_pick(name,"table",grasps);
+        PlanningResultPtr plan = h_planner->plan_pick(name,"table",{""},grasps);
         if(plan->status == HumanoidPlanner::SUCCESS) {
             ROS_INFO("Planning pickup phase sucessfully completed!");
         } else {

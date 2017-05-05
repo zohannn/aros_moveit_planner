@@ -175,13 +175,13 @@ public:
 
     /**
      * @brief plan_pick
-     * Plan a pickup movement with the list of given grasps
      * @param object_id
-     * @param grasps
      * @param support_surf
+     * @param allowed_touch_objects
+     * @param grasps
      * @return
      */
-    PlanningResultPtr plan_pick(const string &object_id, const string &support_surf, const vector<Grasp> &grasps);
+    PlanningResultPtr plan_pick(const string &object_id, const string &support_surf, const std::vector<string> &allowed_touch_objects,const vector<Grasp> &grasps);
 
     /**
      * @brief place

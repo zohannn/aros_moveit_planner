@@ -192,13 +192,13 @@ public:
 
     /**
      * @brief plan_place
-     * Plan the place movement with the list of given locations
      * @param object_id
-     * @param locations
      * @param support_surf
+     * @param allowed_touch_objects
+     * @param locations
      * @return
      */
-    PlanningResultPtr plan_place(const string &object_id, const string &support_surf, const vector<PlaceLocation> &locations);
+    PlanningResultPtr plan_place(const string &object_id, const string &support_surf, const std::vector<string> &allowed_touch_objects, const vector<PlaceLocation> &locations);
 
 
     //PlanningResultPtr plan_move(const std::string group_arm, const std::string group_hand, const geometry_msgs::Pose &pose_goal, int hand_code, std::vector<double> hand_posture);

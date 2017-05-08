@@ -202,7 +202,7 @@ public:
 
         loc.push_back(g);
 
-        PlanningResultPtr plan = h_planner->plan_place(name,"table",loc);
+        PlanningResultPtr plan = h_planner->plan_place(name,"table",{""},loc);
 
         if(plan->status == HumanoidPlanner::SUCCESS) {
             ROS_INFO("Planning placement phase sucessfully completed!");

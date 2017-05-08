@@ -670,14 +670,14 @@ PlanningResultPtr HumanoidPlanner::place(moveit_params &params)
     std::string obj_name = params.obj_name;
     locs.push_back(g);
 
-    result = this->plan_place(obj_name,params.support_surface,locs);
+    result = this->plan_place(obj_name,params.support_surface,params.allowed_touch_objects,locs);
     return result;
 }
 
 
 
 
-PlanningResultPtr HumanoidPlanner::plan_place(const string &object_id, const string &support_surf, const vector<PlaceLocation> &locations)
+PlanningResultPtr HumanoidPlanner::plan_place(const string &object_id, const string &support_surf, const std::vector<string> &allowed_touch_objects,const vector<PlaceLocation> &locations)
 {
     PlanningResultPtr result;
     result.reset(new PlanningResult);
@@ -708,6 +708,9 @@ PlanningResultPtr HumanoidPlanner::plan_place(const string &object_id, const str
 
     if (!support_surf.empty()) {
         goal.allow_gripper_support_collision = true;
+    }
+    if(!allowed_touch_objects.empty()){
+        goal.allowed_touch_objects = allowed_touch_objects;
     }
 
     goal.place_locations = locations;

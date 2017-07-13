@@ -390,7 +390,7 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
   double dHO = params.dHO;
   double tol_x = ((double)20.0)/1000;// [m]
   double tol_y = ((double)0.0)/1000;// [m]
-  double tol_z = ((double)-30.0)/1000;// [m]
+  double tol_z = ((double)-10.0)/1000;// [m]
   Vector3d pose_position = app_vv*dHO+tar_pos;
   p.pose.position.x = pose_position(0)+tol_x;
   p.pose.position.y = pose_position(1)+tol_y;

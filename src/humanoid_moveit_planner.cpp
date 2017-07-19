@@ -388,7 +388,7 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
   // position of the pose
   // tolerances to cope with the differences between the V-REP scenario and the R-Viz scenario
   double dHO = params.dHO;
-  double tol_x = ((double)10.0)/1000;// [m]
+  double tol_x = ((double)0.0)/1000;// [m]
   double tol_y = ((double)0.0)/1000;// [m]
   double tol_z = ((double)0.0)/1000;// [m]
   Vector3d pose_position = app_vv*dHO+tar_pos;
@@ -618,7 +618,7 @@ PlanningResultPtr HumanoidPlanner::place(moveit_params &params)
 
     // Place locations
     // tolerances to cope with the differences between the V-REP scenario and the R-Viz scenario
-    double tol_x = ((double)10.0)/1000;// [m]
+    double tol_x = ((double)0.0)/1000;// [m]
     double tol_y = ((double)0.0)/1000;// [m]
     double tol_z = ((double)0.0)/1000;// [m]
     std::vector<PlaceLocation> locs;

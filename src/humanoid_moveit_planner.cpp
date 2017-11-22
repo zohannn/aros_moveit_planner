@@ -397,6 +397,8 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
   p.pose.position.z = pose_position(2)+tol_z;
   // orientation of the pose
   Vector3d x_hand; Vector3d y_hand; Vector3d z_hand;
+  x_hand = x_tar; z_hand = z_tar;
+  /*
   int griptype = params.griptype;
   switch(griptype){
   case 211: case 111:// Side thumb left
@@ -418,6 +420,7 @@ PlanningResultPtr HumanoidPlanner::pick(moveit_params& params)
       // TO DO
       break;
   }
+  */
   y_hand = z_hand.cross(x_hand);
   Matrix3d Rot_hand = Matrix3d::Zero();
   Rot_hand.col(0)=x_hand; Rot_hand.col(1)=y_hand; Rot_hand.col(2)=z_hand;

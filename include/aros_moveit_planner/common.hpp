@@ -57,7 +57,7 @@ typedef struct{
     std::vector<std::string> allowed_touch_objects; /**< list of allowed object to touch for pick and place movements */
     int arm_code; /**< the code of the arm: 0 = both arms, 1 = right arm, 2 = left arm */
     int hand_code;/**< the code of the hand: 0 = human hand, 1 = barrett hand */
-    int griptype; /**< the type of the grip */
+    //int griptype; /**< the type of the grip */
     string mov_infoline; /**< description of the movement */
     double dHO;/**< distanche hand-target*/
     std::vector<double> finalHand;/**< final posture of the hand */

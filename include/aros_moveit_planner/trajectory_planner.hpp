@@ -64,7 +64,7 @@ public:
 
     /**
      * @brief setAllowedPlanningTime
-     * It sets the maximum allwed time for planning
+     * It sets the maximum allowed time for planning
      * @param value
      */
     void setAllowedPlanningTime(double value);

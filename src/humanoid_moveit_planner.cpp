@@ -47,8 +47,6 @@ HumanoidPlanner::HumanoidPlanner(const string &name)
     }else{
        ROS_WARN("Getting the planning scene failue");
     }
-
-
 }
 
 

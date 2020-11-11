@@ -6,7 +6,6 @@
 
 
 using namespace trajectory_planner_moveit;
-using namespace common;
 using namespace std;
 
 int argcc;

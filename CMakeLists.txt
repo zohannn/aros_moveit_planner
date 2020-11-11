@@ -20,9 +20,6 @@ find_package(catkin REQUIRED
     geometric_shapes
 )
 
-##find_package(cmake_modules REQUIRED)
-
-#find_package( Eigen3 REQUIRED )
 include_directories(${EIGEN3_INCLUDE_DIR})
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
@@ -251,9 +248,9 @@ target_link_libraries(humanoid_planner ${catkin_LIBRARIES})
 # Testing
 ##############################################################################
 if(TEST)
-
-
+    # gtest
     enable_testing ()
+    find_package(GTest REQUIRED)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
     include_directories(${GTEST_INCLUDE_DIRS})
     SET( TEST_LIBRARIES ${GTEST_LIBRARIES} )
@@ -265,7 +262,7 @@ if(TEST)
     add_executable(${PROJECT_KIN_TEST_NAME} ${KIN_TEST_CPP_FILES})
     target_link_libraries(${PROJECT_KIN_TEST_NAME} ${catkin_LIBRARIES} ${TEST_LIBRARIES} kinematics_helper)
     add_test (NAME Test_Kinematics_Helper COMMAND ${PROJECT_KIN_TEST_NAME})
-if(FALSE)
+
     ## Trajectory planner tests
     set(PROJECT_TRAJ_TEST_NAME ${PROJECT_NAME}_traj_planner_test)
     file(GLOB TRAJ_TEST_CPP_FILES ${PROJECT_SOURCE_DIR}/test/src/traj_planner_test.cpp)
@@ -290,7 +287,7 @@ if(FALSE)
     target_link_libraries(${PROJECT_VIS_TEST_NAME} ${catkin_LIBRARIES} ${TEST_LIBRARIES}
         trajectory_planner visualization_tools)
     add_test (NAME Test_Visualization_tools COMMAND ${PROJECT_VIS_TEST_NAME})
-endif()
+
     ## Humanoid planner tests
     set(PROJECT_HP_TEST_NAME ${PROJECT_NAME}_humanoid_planner_test)
     file(GLOB HP_TEST_CPP_FILES ${PROJECT_SOURCE_DIR}/test/src/humanoid_planner_test.cpp)
